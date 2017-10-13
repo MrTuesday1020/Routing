@@ -3,8 +3,8 @@
 # z5092923 Wang Jintao
 # z5104857 Shi Xiaoyun
 
-from threading import Timer
-import timeit
+import sched, time
+from random import randint
 
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
@@ -13,7 +13,8 @@ ROUTING_SCHEME = "SHP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
-WORKLOAD_FILE = "workload.txt"
+# workload_small.txt or workload.txt
+WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
@@ -123,9 +124,13 @@ def SDP(graph,start,end):
 def LLP():
 	pass
 
-def doRequest():
-	pass
-	#print("do request")
+count = 0
+def doRequest(timestamp, start, end):
+	global count
+	#print("from " + start + " to end " + end + " at " + timestamp)
+	time.sleep(1)
+	count += 1
+	print("At " + timestamp + " count is " + str(count))
 	
 def main():
 	# open and read TOPOLOGY_FILE
@@ -140,18 +145,17 @@ def main():
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
 	
-#	times = []
-#	for i in range(len(requests)):
-#		t = Timer(float(requests[i][0]),doRequest)
-#		times.append(t)
-#	
-#	
-#	for t in times:
-#		t.start()
+	# init a schedule
+	schedule = sched.scheduler (time.time, time.sleep)
+	# put requests into schedule
+	for i in range(len(requests)):
+		schedule.enter(float(requests[i][0]), 0, doRequest, (requests[i][0], requests[i][1], requests[i][2]))
 	
-	x = SHP(graph, 'A', 'C')
-	y = SDP(graph, 'A', 'C')
-	print(y)
+	schedule.run()
+	
+#	x = SHP(graph, 'A', 'C')
+#	y = SDP(graph, 'A', 'C')
+#	print(y)
 	
 
 if __name__ == "__main__":
