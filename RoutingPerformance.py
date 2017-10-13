@@ -59,7 +59,7 @@ class Graph:
 		else:
 			print("nV: {}; nE: {}".format(self.nV,self.nE))
 			for i in range(self.nV):
-				for j in range(self.nV):
+				for j in range(i+1,self.nV):
 					if self.edges[i][j] != 0:
 						print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 	
