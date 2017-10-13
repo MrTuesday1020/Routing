@@ -22,9 +22,6 @@ with open(TOPOLOGY_FILE) as f:
 with open(WORKLOAD_FILE) as f:
 	requests = [line.strip().split(" ") for line in f]
 
-for router in routers:
-	print("insert source " + str(router[0]) + " and destination " + str(router[1]) + " with values " + str(router[2:4]))
-
 # Graph
 class Graph:
 	# create a new graph
@@ -63,9 +60,9 @@ class Graph:
 					if self.edges[i][j] != 0:
 						print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 	
-g = Graph()
-g.insertEdge('A', 'B', 20, 19)
-g.insertEdge('A', 'C', 10, 10)
-x = g.adjacent('A', 'B')
-print(x)
-g.showGraph()
+graph = Graph()
+
+for router in routers:
+	graph.insertEdge(router[0], router[1], router[2], router[3])
+
+graph.showGraph()
