@@ -3,6 +3,9 @@
 # z5092923 Wang Jintao
 # z5104857 Shi Xiaoyun
 
+from threading import Timer
+import timeit
+
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
@@ -65,7 +68,6 @@ def doRequest():
 	print("do request")
 	
 def main():
-	
 	# open and read TOPOLOGY_FILE
 	with open(TOPOLOGY_FILE) as f:
 		routers = [line.strip().split(" ") for line in f]
@@ -77,9 +79,15 @@ def main():
 	graph = Graph()
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
-
-	for request in requests:
-		doRequest()
+	
+#	times = []
+#	for i in range(len(requests)):
+#		t = Timer(float(requests[i][0]),doRequest)
+#		times.append(t)
+#	
+#	
+#	for t in times:
+#		t.start()
 	
 
 if __name__ == "__main__":
