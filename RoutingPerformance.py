@@ -25,7 +25,7 @@ with open(WORKLOAD_FILE) as f:
 # Graph
 class Graph:
 	# create a new graph
-	# O(v^2)
+	# O(V^2)
 	def __init__(self,V = 26):
 		self.edges = [[0 for x in range(V)] for y in range(V)]
 		self.nV = V
@@ -36,6 +36,8 @@ class Graph:
 	def insertEdge(self,v,w,d,c,s = True):
 		v = ord(v) - 65
 		w = ord(w) - 65
+		d = int(d)
+		c = int(c)
 		if self.edges[v][w] == 0:
 			self.edges[v][w] = [d,c,s];
 			self.edges[w][v] = [d,c,s];
