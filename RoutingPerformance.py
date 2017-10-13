@@ -14,14 +14,6 @@ WORKLOAD_FILE = "workload.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
-# open and read TOPOLOGY_FILE
-with open(TOPOLOGY_FILE) as f:
-	routers = [line.strip().split(" ") for line in f]
-
-# open and reand WORKLOAD_FILE
-with open(WORKLOAD_FILE) as f:
-	requests = [line.strip().split(" ") for line in f]
-
 # Graph
 class Graph:
 	# create a new graph
@@ -59,10 +51,36 @@ class Graph:
 				for j in range(i+1,self.nV):
 					if self.edges[i][j] != 0:
 						print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
+
+def SHP():
+	pass
+
+def SDP():
+	pass
 	
-graph = Graph()
+def LLP():
+	pass
 
-for router in routers:
-	graph.insertEdge(router[0], router[1], router[2], router[3])
+def doRequest():
+	print("do request")
+	
+def main():
+	
+	# open and read TOPOLOGY_FILE
+	with open(TOPOLOGY_FILE) as f:
+		routers = [line.strip().split(" ") for line in f]
 
-graph.showGraph()
+	# open and reand WORKLOAD_FILE
+	with open(WORKLOAD_FILE) as f:
+		requests = [line.strip().split(" ") for line in f]
+		
+	graph = Graph()
+	for router in routers:
+		graph.insertEdge(router[0], router[1], router[2], router[3])
+
+	for request in requests:
+		doRequest()
+	
+
+if __name__ == "__main__":
+	main()
