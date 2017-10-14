@@ -23,18 +23,20 @@ PACKET_RATE = 2
 
 
 ########################## Output  ##########################
-#The total number of virtual connection requests.
+# The total number of virtual connection requests.
 NoOfReq = 0
-#The total number of packets.
+# The total number of packets.
 NoOfAllPkt = 0
-#The number (and percentage) of successfully routed packets.
+# The number (and percentage) of successfully routed packets.
 NoOfSuccPkt = 0
-#The number (and percentage) of blocked packets.
+# The number (and percentage) of blocked packets.
 NoOfBlkPkt = 0
-#The average number of hops (i.e. links) consumed per successfully routed circuit. 
-NoOfHops = []
-#The average source-to-destination cumulative propagation delay per successfully routed circuit.
-PDelays = []
+# The total number of hops (i.e. links) consumed per successfully routed circuit. 
+NoOfHops = 0
+# The total source-to-destination cumulative propagation delay per successfully routed circuit.
+PDelays = 0
+# The total number of success requests
+NoOfSuccReq = 0
 
 
 ########################## Graph ##########################
@@ -80,7 +82,7 @@ class Graph:
 
 	# release a capacity between v,w
 	# O(1)
-	def realse(self,v,w):
+	def release(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
@@ -207,14 +209,12 @@ def LLP():
 
 ########################## Thread ##########################
 Lock = threading.Lock()
+threads = []
 
 class request (threading.Thread):
-	def __init__(self, threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
+	def __init__(self, threadID, graph, startTime, source, destination, runTime):
 		threading.Thread.__init__(self)
 		self.threadID = threadID
-		self.NETWORK_SCHEME = NETWORK_SCHEME
-		self.ROUTING_SCHEME = ROUTING_SCHEME
-		self.PACKET_RATE = PACKET_RATE
 		self.graph = graph
 		self.startTime = startTime
 		self.source = source
@@ -222,18 +222,18 @@ class request (threading.Thread):
 		self.runTime = runTime
 	
 	def run(self):
-		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
-		if(self.NETWORK_SCHEME == "CIRCUIT"):
-			print("Request " + str(self.threadID) + " starts with path:")
-			if(self.ROUTING_SCHEME == "SHP"):
+		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq
+		if(NETWORK_SCHEME == "CIRCUIT"):
+			print("Request " + str(self.threadID) + " starts with path:", end='')
+			if(ROUTING_SCHEME == "SHP"):
 				path = circuit_SHP(self.graph, self.source, self.destination)
-			elif(self.ROUTING_SCHEME == "SDP"):
+			elif(ROUTING_SCHEME == "SDP"):
 				path = circuit_SDP(self.graph, self.source, self.destination)
 			else:
 				pass
 			print(path)
-			Lock.acquire()
 			isBlock = False
+			Lock.acquire()
 			for i in range(len(path)-1):
 				isBlock = self.graph.isBlock(path[i],path[i+1])
 				# if this sub path is blocked then break the loop and the whole path is blocked
@@ -243,19 +243,35 @@ class request (threading.Thread):
 			if not isBlock:
 				for i in range(len(path)-1):
 					self.graph.occupy(path[i],path[i+1])
+				NoOfSuccPkt += int(float(self.runTime) * PACKET_RATE)
+				NoOfSuccReq += 1
+				NoOfHops += len(path)
+				delay = self.graph.delay(path[i],path[i+1])
+				PDelays += delay
+			else:
+				NoOfBlkPkt += int(float(self.runTime) * PACKET_RATE)
+				print("Request " + str(self.threadID) + " has been blocked ")
 			Lock.release()
-			time.sleep(float(self.runTime))
-			
-			
-			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+			if not isBlock:
+				# the time the connection lasts
+				time.sleep(float(self.runTime))
+				# release resources
+				Lock.acquire()
+				for i in range(len(path)-1):
+					self.graph.release(path[i],path[i+1])
+				Lock.release()
+				print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
-def doRequest(threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
-	thread = request(threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime)
+def doRequest(threadID, graph, startTime, source, destination, runTime):
+	thread = request(threadID, graph, startTime, source, destination, runTime)
 	thread.start()
+	global threads
+	threads.append(thread)
 	
 
 ########################## Main ##########################
 def main():
+	global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, threads
 	# open and read TOPOLOGY_FILE
 	with open(TOPOLOGY_FILE) as f:
 		routers = [line.strip().split(" ") for line in f]
@@ -263,7 +279,11 @@ def main():
 	# open and reand WORKLOAD_FILE
 	with open(WORKLOAD_FILE) as f:
 		requests = [line.strip().split(" ") for line in f]
-		
+	# compute statistics
+	NoOfReq = len(requests)	
+	for request in requests:
+		NoOfAllPkt += int(float(request[3]) * PACKET_RATE)
+	
 	graph = Graph()
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
@@ -282,9 +302,21 @@ def main():
 		source = requests[i][1]
 		destination = requests[i][2]
 		runTime = requests[i][3]
-		schedule.enter(float(startTime), 0, doRequest, (i, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime))
+		schedule.enter(float(startTime), 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
 	schedule.run()
+	
+	for t in threads:
+		t.join()
+	
+	print("total number of virtual connection requests:", NoOfReq)
+	print("total number of packets:", NoOfAllPkt)
+	print("number of successfully routed packets:", NoOfSuccPkt)
+	print("percentage of successfully routed packets: {.2f}".format(NoOfSuccPkt/NoOfAllPkt*100))
+	print("number of blocked packets:", NoOfBlkPkt)
+	print("percentage of blocked packets: {.2f}".format(NoOfBlkPkt/NoOfAllPkt*100))
+	print("average number of hops per circuit: {.2f}".format(NoOfHops/NoOfSuccReq*100))
+	print("average cumulative propagation delay per circuit: {.2f}".format(PDelays/NoOfSuccReq*100))
 
 if __name__ == "__main__":
 	main()
