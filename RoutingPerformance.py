@@ -222,13 +222,13 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
-			print("Request " + str(self.threadID) + " starts with path: ", end='')
 			if(self.ROUTING_SCHEME == "SHP"):
 				path = circuit_SHP(self.graph, self.source, self.destination)
 			elif(self.ROUTING_SCHEME == "SDP"):
 				path = circuit_SDP(self.graph, self.source, self.destination)
 			else:
 				pass
+			print("Request " + str(self.threadID) + " starts with path: ")
 			print(path)
 			time.sleep(float(self.runTime))
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
