@@ -134,7 +134,7 @@ class Graph:
 ########################## Route Scheme ##########################
 # Shortest Hop Path
 # O(nV^2)
-def SHP(graph,start,end):
+def circuit_SHP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
@@ -168,7 +168,7 @@ def packet_SHP(graph,start,visited = []):
 
 # Shortest Delay Path
 # O(nV^2)
-def SDP(graph,start,end):
+def circuit_SDP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
@@ -226,13 +226,14 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
-			if(self.ROUTING_SCHEME == "SHP")
+			print("Request " + str(self.threadID) + " starts with path: ", end='')
+			if(self.ROUTING_SCHEME == "SHP"):
 				path = SHP(self.graph, self.source, self.destination)
 			elif(self.ROUTING_SCHEME == "SDP"):
 				path = SDP(self.graph, self.source, self.destination)
 			else:
 				pass
-			print("Request " + str(self.threadID) + " starts")
+			print(path)
 			time.sleep(float(self.runTime))
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
@@ -256,10 +257,10 @@ def main():
 		graph.insertEdge(router[0], router[1], router[2], router[3])
 #	graph._vSet()
 	
-	x = packet_SHP(graph, 'A', 'C')
-	y = packet_SDP(graph, 'A', 'O')
-	print(x)
-	print(y)
+#	x = SHP(graph, 'K', 'D')
+#	y = SDP(graph, 'F', 'L')
+#	print(x)
+#	print(y)
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
