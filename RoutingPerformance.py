@@ -12,7 +12,7 @@ import time
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = "SHP"
+ROUTING_SCHEME = "LLP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
@@ -107,6 +107,13 @@ class Graph:
 		if type(w) is str:
 			w = ord(w) - 65
 		return self.edges[v][w][0]
+	
+	def ratio(self,v,w):
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
+		return (self.edges[v][w][1]-self.edges[v][w][2])/self.edges[v][w][1]
 	
 #	# return whether is node
 #	# O(nV)
@@ -203,9 +210,40 @@ def packet_SDP(graph,start,visited = []):
 	return path+[return_node]
 
 # Least Loaded Path
-def LLP():
-	pass
+def circuit_LLP(graph,start,end):
+	dist = [float("inf") for x in range(graph.nV)]
+	dist[ord(start)-65] = 0
+	pred = [ -1 for x in range(graph.nV)]
+	start = ord(start)-65
+	adjed = [start]
+	visited = [start]
+	while len(adjed) != 0:
+		source = adjed.pop()
+		for i in range(graph.nV):
+			if graph.adjacent(source,i) and i not in visited:
+				adjed.append(i)
+				if dist[i] > dist[source] + graph.ratio(source, i):
+					dist[i] = dist[source] + graph.ratio(source, i)
+					pred[i] = source
+		visited.append(source)
+	path = [end]
+	end = ord(end)-65
+	while dist[ord(path[-1])-65] != 0:
+		end = pred[end]
+		path.append(chr(end+65))
+	path.reverse()
+	return path
 
+def packet_SDP(graph,start,visited = []):
+	path = [start]
+	dist = float("inf")
+	for i in range(graph.nV):
+		node = chr(i+65)
+		if graph.adjacent(start,i) and node not in visited:
+			if dist > graph.ratio(start,i):
+				dist = graph.ratio(start,i)
+				return_node = node
+	return path+[return_node]
 
 ########################## Thread ##########################
 Lock = threading.Lock()
@@ -224,16 +262,19 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq
 		if(NETWORK_SCHEME == "CIRCUIT"):
-			#print("Request " + str(self.threadID) + " starts with path:", end='')
+			print("Request " + str(self.threadID) + " starts with path:", end='')
 			if(ROUTING_SCHEME == "SHP"):
 				path = circuit_SHP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "SDP"):
 				path = circuit_SDP(self.graph, self.source, self.destination)
+			elif(ROUTING_SCHEME == "LLP"):
+				path = circuit_LLP(self.graph, self.source, self.destination)
 			else:
 				pass
-			#print(path)
-			isBlock = False
+			print(path)
+
 			Lock.acquire()
+			isBlock = False
 			for i in range(len(path)-1):
 				isBlock = self.graph.isBlock(path[i],path[i+1])
 				# if this sub path is blocked then break the loop and the whole path is blocked
@@ -267,7 +308,7 @@ def doRequest(threadID, graph, startTime, source, destination, runTime):
 	thread.start()
 	global threads
 	threads.append(thread)
-	
+
 
 ########################## Main ##########################
 def main():
@@ -279,6 +320,7 @@ def main():
 	# open and reand WORKLOAD_FILE
 	with open(WORKLOAD_FILE) as f:
 		requests = [line.strip().split(" ") for line in f]
+
 	# compute statistics
 	NoOfReq = len(requests)	
 	for request in requests:
@@ -291,8 +333,10 @@ def main():
 	
 #	x = SHP(graph, 'K', 'D')
 #	y = SDP(graph, 'F', 'L')
+	z = circuit_LLP(graph, 'K', 'D')
 #	print(x)
 #	print(y)
+	print(z)
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
