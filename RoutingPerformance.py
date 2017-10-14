@@ -5,6 +5,8 @@
 
 import sched, time
 from random import randint
+import threading
+import time
 
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
@@ -18,7 +20,7 @@ WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
-# Graph
+########################## Graph ##########################
 class Graph:
 	# create a new graph
 	def __init__(self,V = 26):
@@ -79,6 +81,8 @@ class Graph:
 					if self.edges[i][j] != 0:
 						print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
+
+########################## Route Scheme ##########################
 # get all path end-to-end
 def AllPath(graph,start,end):
 	temp_path = [start]
@@ -124,13 +128,20 @@ def SDP(graph,start,end):
 def LLP():
 	pass
 
-count = 0
-def doRequest(timestamp, start, end):
-	global count
-	#print("from " + start + " to end " + end + " at " + timestamp)
-	time.sleep(1)
-	count += 1
-	print("At " + timestamp + " count is " + str(count))
+########################## Thread ##########################
+class request (threading.Thread):
+	def __init__(self, threadID, runTime):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.runTime = runTime
+	def run(self):
+		print("Request " + str(self.threadID) + " starts")
+		time.sleep(float(self.runTime))
+		print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+
+def doRequest(i, startTime, source, destination, runTime):
+	thread = request(i,runTime)
+	thread.start()
 	
 def main():
 	# open and read TOPOLOGY_FILE
@@ -149,13 +160,9 @@ def main():
 	schedule = sched.scheduler (time.time, time.sleep)
 	# put requests into schedule
 	for i in range(len(requests)):
-		schedule.enter(float(requests[i][0]), 0, doRequest, (requests[i][0], requests[i][1], requests[i][2]))
+		schedule.enter(float(requests[i][0]), 0, doRequest, (i, requests[i][0], requests[i][1], requests[i][2],requests[i][3]))
 	
 	schedule.run()
-	
-#	x = SHP(graph, 'A', 'C')
-#	y = SDP(graph, 'A', 'C')
-#	print(y)
 	
 
 if __name__ == "__main__":
