@@ -43,9 +43,9 @@ class Graph:
 	# O(nV^2)	nV = 26
 	def __init__(self,V = 26):
 		self.edges = [[0 for x in range(V)] for y in range(V)]
+		self.vSet = [chr(x+65) for x in range(V)]
 		self.nV = V
 		self.nE = 0
-		self.vSet = []
 	
 	# vertices v and w , delay d, all capacities c, already used capacities s
 	# O(1)
@@ -95,7 +95,7 @@ class Graph:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		return (self.edges[v][w][0] == self.edges[v][w][2])
+		return (self.edges[v][w][1] == self.edges[v][w][2])
 	
 	# return delay
 	# O(1)
@@ -106,67 +106,75 @@ class Graph:
 			w = ord(w) - 65
 		return self.edges[v][w][0]
 	
-	# return whether is node
-	# O(nV)		nV = 26
-	def validV(self,v):
-		if type(v) is str:
-			v = ord(v) - 65
-		for i in range(26):
-			if self.edges[v][i] != 0:
-				return True
+#	# return whether is node
+#	# O(nV)
+#	def validV(self,v):
+#		if type(v) is str:
+#			v = ord(v) - 65
+#		for i in range(self.nV):
+#			if self.edges[v][i] != 0:
+#				return True
 	
-	# check the valid node and return as list
-	# O(nV^2)	nV = 26
-	def _vSet(self):
-		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
-		self.nV = len(self.vSet)
+#	# check the valid node and return as list
+#	# O(nV^2)	nV = 26
+#	def _vSet(self):
+#		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
+#		self.nV = len(self.vSet)
 	
-	# print edges in graph
-	# O(nV^2)	nV = 26
-	def showGraph(self):
-		for i in range(self.nV):
-			for j in range(i+1,self.nV):
-				if self.edges[i][j] != 0:
-					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
+#	# print edges in graph
+#	# O(nV^2)
+#	def showGraph(self):
+#		for i in range(self.nV):
+#			for j in range(i+1,self.nV):
+#				if self.edges[i][j] != 0:
+#					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
+
 
 
 ########################## Route Scheme ##########################
 # Shortest Hop Path
-# O(nV^2)	valid nV
+# O(nV^2)
 def SHP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
 	visited = []
 	start = ord(start)-65
-	for i in range(graph.nV):
+	for j in range(graph.nV):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
-				if dist[i] > dist[source]+1:
-					dist[i] = dist[source]+1
+				if dist[i] > dist[source] + 1:
+					dist[i] = dist[source] + 1
 					pred[i] = source
 		start += 1
 		if start >= graph.nV:
 			start -= graph.nV
 	path = [end]
-	end = ord(end)-65 
+	end = ord(end)-65
 	while dist[ord(path[-1])-65] != 0:
 		path.append(chr(pred[end]+65))
 		end = pred[end]
 	path.reverse()
 	return path
 
+def packet_SHP(graph,start,visited = []):
+	path = [start]
+	for i in range(graph.nV):
+		node = chr(i+65)
+		if graph.adjacent(start,i) and node not in visited:
+			return path+[node]
+
 # Shortest Delay Path
-# O(nV^2)	valid nV
+# O(nV^2)
 def SDP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
 	visited = []
 	start = ord(start)-65
-	for i in range(graph.nV):
+	for j in range(graph.nV):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
@@ -180,12 +188,23 @@ def SDP(graph,start,end):
 	path = [end]
 	end = ord(end)-65 
 	while dist[ord(path[-1])-65] != 0:
-		path.append(chr(pred[end]+65))
 		end = pred[end]
+		path.append(chr(end+65))
 	path.reverse()
 	return path
-	
 
+def packet_SDP(graph,start,visited = []):
+	path = [start]
+	dist = float("inf")
+	for i in range(graph.nV):
+		node = chr(i+65)
+		if graph.adjacent(start,i) and node not in visited:
+			if dist > graph.delay(start,i):
+				dist = graph.delay(start,i)
+				return_node = node
+	return path+[return_node]
+
+# Least Loaded Path
 def LLP():
 	pass
 
@@ -203,6 +222,7 @@ class request (threading.Thread):
 		self.source = source
 		self.destination = destination
 		self.runTime = runTime
+	
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
@@ -216,8 +236,8 @@ class request (threading.Thread):
 			time.sleep(float(self.runTime))
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
-def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
-	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime)
+def doRequest(threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
+	thread = request(threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime)
 	thread.start()
 	
 
@@ -234,13 +254,12 @@ def main():
 	graph = Graph()
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
-	graph._vSet()
+#	graph._vSet()
 	
-	x = SHP(graph, 'A', 'C')
-	y = SDP(graph, 'A', 'C')
+	x = packet_SHP(graph, 'A', 'C')
+	y = packet_SDP(graph, 'A', 'O')
 	print(x)
 	print(y)
-	
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
