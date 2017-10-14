@@ -129,8 +129,6 @@ class Graph:
 #				if self.edges[i][j] != 0:
 #					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
-
-
 ########################## Route Scheme ##########################
 # Shortest Hop Path
 # O(nV^2)
@@ -138,19 +136,18 @@ def SHP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
-	visited = []
 	start = ord(start)-65
-	for j in range(graph.nV):
-		source = ord(graph.vSet[start])-65
-		visited.append(source)
+	adjed = [start]
+	visited = [start]
+	while len(adjed) != 0:
+		source = adjed.pop()
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
+				adjed.append(i)
 				if dist[i] > dist[source] + 1:
 					dist[i] = dist[source] + 1
 					pred[i] = source
-		start += 1
-		if start >= graph.nV:
-			start -= graph.nV
+		visited.append(source)
 	path = [end]
 	end = ord(end)-65
 	while dist[ord(path[-1])-65] != 0:
@@ -172,21 +169,20 @@ def SDP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
-	visited = []
 	start = ord(start)-65
-	for j in range(graph.nV):
-		source = ord(graph.vSet[start])-65
-		visited.append(source)
+	adjed = [start]
+	visited = [start]
+	while len(adjed) != 0:
+		source = adjed.pop()
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
+				adjed.append(i)
 				if dist[i] > dist[source] + graph.delay(source, i):
 					dist[i] = dist[source] + graph.delay(source, i)
 					pred[i] = source
-		start += 1
-		if start >= graph.nV:
-			start -= graph.nV
+		visited.append(source)
 	path = [end]
-	end = ord(end)-65 
+	end = ord(end)-65
 	while dist[ord(path[-1])-65] != 0:
 		end = pred[end]
 		path.append(chr(end+65))
@@ -226,7 +222,7 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
-			if(self.ROUTING_SCHEME == "SHP")
+			if(self.ROUTING_SCHEME == "SHP"):
 				path = SHP(self.graph, self.source, self.destination)
 			elif(self.ROUTING_SCHEME == "SDP"):
 				path = SDP(self.graph, self.source, self.destination)
@@ -255,11 +251,11 @@ def main():
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
 #	graph._vSet()
-	
-	x = packet_SHP(graph, 'A', 'C')
-	y = packet_SDP(graph, 'A', 'O')
-	print(x)
-	print(y)
+#	
+#	#x = SHP(graph, 'K', 'D')
+#	y = SHP(graph, 'F', 'L')
+#	print(x)
+#	print(y)
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
