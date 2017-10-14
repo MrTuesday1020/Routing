@@ -10,9 +10,9 @@ import time
 
 ########################## Input Arguments ##########################
 # network type values: CIRCUIT or PACKET
-NETWORK_SCHEME = "CIRCUIT"
+NETWORK_SCHEME = "PACKET"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = "LLP"
+ROUTING_SCHEME = "SDP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
@@ -282,7 +282,10 @@ class request (threading.Thread):
 				for i in range(len(path)-1):
 					self.graph.release(path[i],path[i+1])
 				Lock.release()
-				print("Request " + str(self.threadID) + " runs " + str(interval))
+				if(NETWORK_SCHEME == "CIRCUIT"):
+					print("Request " + str(self.threadID) + " durates {:.6f}".format(interval))
+				else:
+					print("Request " + str(self.threadID) + " starts a request after {:.6f}".format(currentTime - interval))
 
 def doRequest(threadID, graph, startTime, source, destination, runTime):
 	thread = request(threadID, graph, startTime, source, destination, runTime)
@@ -329,10 +332,13 @@ def main():
 		runTime = requests[i][3]
 		schedule.enter(float(startTime), 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
+	start  = time.time()
 	schedule.run()
 	
 	for t in threads:
 		t.join()
+	
+	print("RuntTime:{:.2f}".format(time.time()-start))
 	
 	print("total number of virtual connection requests:", NoOfReq)
 	print("total number of packets:", NoOfAllPkt)
