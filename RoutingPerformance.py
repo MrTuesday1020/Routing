@@ -21,6 +21,7 @@ WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
+
 ########################## Output  ##########################
 #The total number of virtual connection requests.
 NoOfReq = 0
@@ -31,9 +32,10 @@ NoOfSuccPkt = 0
 #The number (and percentage) of blocked packets.
 NoOfBlkPkt = 0
 #The average number of hops (i.e. links) consumed per successfully routed circuit. 
-NoOfhops = []
+NoOfHops = []
 #The average source-to-destination cumulative propagation delay per successfully routed circuit.
 PDelays = []
+
 
 ########################## Graph ##########################
 class Graph:
@@ -127,6 +129,7 @@ class Graph:
 				if self.edges[i][j] != 0:
 					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
+
 ########################## Route Scheme ##########################
 # Shortest Hop Path
 # O(nV^2)	valid nV
@@ -186,13 +189,14 @@ def SDP(graph,start,end):
 def LLP():
 	pass
 
+
 ########################## Thread ##########################
 class request (threading.Thread):
-	def __init__(self, threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
+	def __init__(self, threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
 		threading.Thread.__init__(self)
 		self.threadID = threadID
 		self.NETWORK_SCHEME = NETWORK_SCHEME
-		self.threadID = threadID
+		self.ROUTING_SCHEME = ROUTING_SCHEME
 		self.PACKET_RATE = PACKET_RATE
 		self.graph = graph
 		self.startTime = startTime
@@ -200,13 +204,20 @@ class request (threading.Thread):
 		self.destination = destination
 		self.runTime = runTime
 	def run(self):
+		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
+			if(self.ROUTING_SCHEME == "SHP")
+				path = SHP(self.graph, self.source, self.destination)
+			elif(self.ROUTING_SCHEME == "SDP"):
+				path = SDP(self.graph, self.source, self.destination)
+			else:
+				pass
 			print("Request " + str(self.threadID) + " starts")
 			time.sleep(float(self.runTime))
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
-def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
-	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime)
+def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
+	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime)
 	thread.start()
 	
 
@@ -238,8 +249,8 @@ def main():
 		startTime = requests[i][0]
 		source = requests[i][1]
 		destination = requests[i][2]
-		runtime = requests[i][3]
-		schedule.enter(float(startTime), 0, doRequest, (i, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime))
+		runTime = requests[i][3]
+		schedule.enter(float(startTime), 0, doRequest, (i, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime))
 	
 	schedule.run()
 
