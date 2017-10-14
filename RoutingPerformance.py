@@ -3,6 +3,11 @@
 # z5092923 Wang Jintao
 # z5104857 Shi Xiaoyun
 
+import sched, time
+from random import randint
+import threading
+import time
+
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
@@ -10,11 +15,12 @@ ROUTING_SCHEME = "SHP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
-WORKLOAD_FILE = "workload.txt"
+# workload_small.txt or workload.txt
+WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
-# Graph
+########################## Graph ##########################
 class Graph:
 	# create a new graph
 	# O(nV^2)	nV = 26
@@ -106,6 +112,7 @@ class Graph:
 				if self.edges[i][j] != 0:
 					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
+########################## Route Scheme ##########################
 # Shortest Hop Path
 # O(nV^2)	valid nV
 def SHP(graph,start,end):
@@ -164,12 +171,22 @@ def SDP(graph,start,end):
 def LLP():
 	pass
 
-def doRequest():
-	pass
-	#print("do request")
+########################## Thread ##########################
+class request (threading.Thread):
+	def __init__(self, threadID, runTime):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.runTime = runTime
+	def run(self):
+		print("Request " + str(self.threadID) + " starts")
+		time.sleep(float(self.runTime))
+		print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+
+def doRequest(i, startTime, source, destination, runTime):
+	thread = request(i,runTime)
+	thread.start()
 	
 def main():
-	
 	# open and read TOPOLOGY_FILE
 	with open(TOPOLOGY_FILE) as f:
 		routers = [line.strip().split(" ") for line in f]
@@ -183,14 +200,18 @@ def main():
 		graph.insertEdge(router[0], router[1], router[2], router[3])
 	graph._vSet()
 	
-
-	for request in requests:
-		doRequest()
+	x = SHP(graph, 'A', 'C')
+	y = SDP(graph, 'A', 'C')
+	print(x)
+	print(y)
 	
-#	x = SHP(graph, 'A', 'C')
-#	y = SDP(graph, 'A', 'C')
-#	print(y)
-	dijkstra(graph,'A','D')
+	# init a schedule
+	schedule = sched.scheduler (time.time, time.sleep)
+	# put requests into schedule
+	for i in range(len(requests)):
+		schedule.enter(float(requests[i][0]), 0, doRequest, (i, requests[i][0], requests[i][1], requests[i][2],requests[i][3]))
+	
+#	schedule.run()
 
 if __name__ == "__main__":
 	main()
