@@ -228,9 +228,9 @@ class request (threading.Thread):
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
 			print("Request " + str(self.threadID) + " starts with path: ", end='')
 			if(self.ROUTING_SCHEME == "SHP"):
-				path = SHP(self.graph, self.source, self.destination)
+				path = circuit_SHP(self.graph, self.source, self.destination)
 			elif(self.ROUTING_SCHEME == "SDP"):
-				path = SDP(self.graph, self.source, self.destination)
+				path = circuit_SDP(self.graph, self.source, self.destination)
 			else:
 				pass
 			print(path)
