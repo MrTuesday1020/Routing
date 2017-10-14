@@ -28,11 +28,11 @@ class Graph:
 		self.edges = [[0 for x in range(V)] for y in range(V)]
 		self.nV = V
 		self.nE = 0
-		self.vSet = []
+		self.vSet = [chr(x+65) for x in range(self.nV)]
 	
 	# vertices v and w , delay d, link capacities c, status s
 	# O(1)
-	def insertEdge(self,v,w,d,c,s = True):
+	def insertEdge(self,v,w,d,c,s = 0):
 		v = ord(v) - 65
 		w = ord(w) - 65
 		d = int(d)
@@ -58,8 +58,8 @@ class Graph:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		self.edges[v][w][2] = True
-		self.edges[w][v][2] = True
+		self.edges[v][w][2] += 1
+		self.edges[w][v][2] += 1
 
 	# change activity to False
 	# O(1)
@@ -68,8 +68,8 @@ class Graph:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		self.edges[v][w][2] = False
-		self.edges[w][v][2] = False
+		self.edges[v][w][2] -= 1
+		self.edges[w][v][2] -= 1
 	
 	# return whether edge is active (status = True)
 	# O(1)
@@ -90,7 +90,7 @@ class Graph:
 		return self.edges[v][w][0]
 	
 	# return whether is node
-	# O(nV)		nV = 26
+	# O(nV)
 	def validV(self,v):
 		if type(v) is str:
 			v = ord(v) - 65
@@ -98,57 +98,65 @@ class Graph:
 			if self.edges[v][i] != 0:
 				return True
 	
-	# check the valid node and return as list
-	# O(nV^2)	nV = 26
-	def _vSet(self):
-		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
-		self.nV = len(self.vSet)
+#	# check the valid node and return as list
+#	# O(nV^2)	nV = 26
+#	def _vSet(self):
+#		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
+#		self.nV = len(self.vSet)
 	
 	# print edges in graph
-	# O(nV^2)	nV = 26
+	# O(nV^2)
 	def showGraph(self):
 		for i in range(self.nV):
 			for j in range(i+1,self.nV):
 				if self.edges[i][j] != 0:
 					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
+
 ########################## Route Scheme ##########################
 # Shortest Hop Path
-# O(nV^2)	valid nV
+# O(nV^2)
 def SHP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
 	visited = []
 	start = ord(start)-65
-	for i in range(graph.nV):
+	for j in range(graph.nV):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
-				if dist[i] > dist[source]:
-					dist[i] = dist[source]
+				if dist[i] > dist[source] + 1:
+					dist[i] = dist[source] + 1
 					pred[i] = source
 		start += 1
 		if start >= graph.nV:
 			start -= graph.nV
 	path = [end]
-	end = ord(end)-65 
+	end = ord(end)-65
 	while dist[ord(path[-1])-65] != 0:
 		path.append(chr(pred[end]+65))
 		end = pred[end]
 	path.reverse()
 	return path
 
+def packet_SHP(graph,start,visited = []):
+	path = [start]
+	for i in range(graph.nV):
+		node = chr(i+65)
+		if graph.adjacent(start,i) and node not in visited:
+			return path+[node]
+
 # Shortest Delay Path
-# O(nV^2)	valid nV
+# O(nV^2)
 def SDP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
 	visited = []
 	start = ord(start)-65
-	for i in range(graph.nV):
+	for j in range(graph.nV):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
@@ -162,12 +170,22 @@ def SDP(graph,start,end):
 	path = [end]
 	end = ord(end)-65 
 	while dist[ord(path[-1])-65] != 0:
-		path.append(chr(pred[end]+65))
 		end = pred[end]
+		path.append(chr(end+65))
 	path.reverse()
 	return path
-	
 
+def packet_SDP(graph,start,visited = []):
+	path = [start]
+	for i in range(graph.nV):
+		node = chr(i+65)
+		if graph.adjacent(start,i) and node not in visited:
+			if dist > graph.delay(start,i):
+				dist = graph.delay(start,i)
+				return_node = node
+	return path+[return_node]
+
+# Least Loaded Path
 def LLP():
 	pass
 
@@ -198,10 +216,10 @@ def main():
 	graph = Graph()
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
-	graph._vSet()
+#	graph._vSet()
 	
 	x = SHP(graph, 'A', 'C')
-	y = SDP(graph, 'A', 'C')
+	y = SDP(graph, 'A', 'O')
 	print(x)
 	print(y)
 	
