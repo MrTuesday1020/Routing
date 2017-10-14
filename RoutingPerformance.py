@@ -17,12 +17,15 @@ PACKET_RATE = 2
 # Graph
 class Graph:
 	# create a new graph
+	# O(nV^2)	nV = 26
 	def __init__(self,V = 26):
 		self.edges = [[0 for x in range(V)] for y in range(V)]
 		self.nV = V
 		self.nE = 0
+		self.vSet = []
 	
 	# vertices v and w , delay d, link capacities c, status s
+	# O(1)
 	def insertEdge(self,v,w,d,c,s = True):
 		v = ord(v) - 65
 		w = ord(w) - 65
@@ -34,89 +37,130 @@ class Graph:
 			self.nE += 1;
 	
 	# return whether exist edge between two vertices
+	# O(1)
 	def adjacent(self,v,w):
-		v = ord(v) - 65
-		w = ord(w) - 65
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
 		return (self.edges[v][w] != 0)
 	
 	# change activity to True
+	# O(1)
 	def active(self,v,w):
-		v = ord(v) - 65
-		w = ord(w) - 65
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
 		self.edges[v][w][2] = True
 		self.edges[w][v][2] = True
 
 	# change activity to False
+	# O(1)
 	def disactive(self,v,w):
-		v = ord(v) - 65
-		w = ord(w) - 65
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
 		self.edges[v][w][2] = False
 		self.edges[w][v][2] = False
 	
 	# return whether edge is active (status = True)
+	# O(1)
 	def isactivity(self,v,w):
-		v = ord(v) - 65
-		w = ord(w) - 65
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
 		return (self.edges[v][w][2] is True)
 	
+	# return delay
+	# O(1)
 	def delay(self,v,w):
-		v = ord(v) - 65
-		w = ord(w) - 65
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
 		return self.edges[v][w][0]
 	
-	# print edges in graph
-	def showGraph(self):
-		if self.nE == 0:
-			print("nE = 0, No graph\n")
-		else:
-			print("nV: {}; nE: {}".format(self.nV,self.nE))
-			for i in range(self.nV):
-				for j in range(i+1,self.nV):
-					if self.edges[i][j] != 0:
-						print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
-
-# get all path end-to-end
-def AllPath(graph,start,end):
-	temp_path = [start]
-	q = []
-	path = []
-	
-	q.append(temp_path)
-	while len(q) != 0:
-		tmp_path = q.pop()
-		last_node = tmp_path[-1]
-		if last_node == end:
-			path.append(tmp_path)
+	# return whether is node
+	# O(nV)		nV = 26
+	def validV(self,v):
+		if type(v) is str:
+			v = ord(v) - 65
 		for i in range(26):
-			link_node = chr(i+65)
-			if graph.adjacent(link_node,last_node) and link_node not in tmp_path and graph.isactivity(link_node, last_node):
-				new_path = tmp_path + [link_node]
-				q.append(new_path)
-	return path
+			if self.edges[v][i] != 0:
+				return True
+	
+	# check the valid node and return as list
+	# O(nV^2)	nV = 26
+	def _vSet(self):
+		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
+		self.nV = len(self.vSet)
+	
+	# print edges in graph
+	# O(nV^2)	nV = 26
+	def showGraph(self):
+		for i in range(self.nV):
+			for j in range(i+1,self.nV):
+				if self.edges[i][j] != 0:
+					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
 # Shortest Hop Path
+# O(nV^2)	valid nV
 def SHP(graph,start,end):
-	path = AllPath(graph,start,end)
-	min_len = float("inf")
-	for i in path:
-		if len(i) < min_len:
-			min_len = len(i)
-			sortest_path = i
-	return sortest_path
+	dist = [float("inf") for x in range(graph.nV)]
+	dist[ord(start)-65] = 0
+	pred = [ -1 for x in range(graph.nV)]
+	visited = []
+	start = ord(start)-65
+	for i in range(graph.nV):
+		source = ord(graph.vSet[start])-65
+		visited.append(source)
+		for i in range(graph.nV):
+			if graph.adjacent(source,i) and i not in visited:
+				if dist[i] > dist[source]:
+					dist[i] = dist[source]
+					pred[i] = source
+		start += 1
+		if start >= graph.nV:
+			start -= graph.nV
+	path = [end]
+	end = ord(end)-65 
+	while dist[ord(path[-1])-65] != 0:
+		path.append(chr(pred[end]+65))
+		end = pred[end]
+	path.reverse()
+	return path
 
 # Shortest Delay Path
+# O(nV^2)	valid nV
 def SDP(graph,start,end):
-	path = AllPath(graph,start,end)
-	min_len = float("inf")
-	for i in path:
-		length = 0
-		for j in range(len(i)-1):
-			length += graph.delay(i[j],i[j+1])
-		if length < min_len:
-			min_len = length
-			sortest_path = i
-	return sortest_path
+	dist = [float("inf") for x in range(graph.nV)]
+	dist[ord(start)-65] = 0
+	pred = [ -1 for x in range(graph.nV)]
+	visited = []
+	start = ord(start)-65
+	for i in range(graph.nV):
+		source = ord(graph.vSet[start])-65
+		visited.append(source)
+		for i in range(graph.nV):
+			if graph.adjacent(source,i) and i not in visited:
+				if dist[i] > dist[source] + graph.delay(source, i):
+					dist[i] = dist[source] + graph.delay(source, i)
+					pred[i] = source
+		start += 1
+		if start >= graph.nV:
+			start -= graph.nV
+	path = [end]
+	end = ord(end)-65 
+	while dist[ord(path[-1])-65] != 0:
+		path.append(chr(pred[end]+65))
+		end = pred[end]
+	path.reverse()
+	return path
 	
+
 def LLP():
 	pass
 
@@ -137,14 +181,16 @@ def main():
 	graph = Graph()
 	for router in routers:
 		graph.insertEdge(router[0], router[1], router[2], router[3])
+	graph._vSet()
+	
 
 	for request in requests:
 		doRequest()
 	
-	x = SHP(graph, 'A', 'C')
-	y = SDP(graph, 'A', 'C')
-	print(y)
-	
+#	x = SHP(graph, 'A', 'C')
+#	y = SDP(graph, 'A', 'C')
+#	print(y)
+	dijkstra(graph,'A','D')
 
 if __name__ == "__main__":
 	main()
