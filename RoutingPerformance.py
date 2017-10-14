@@ -224,14 +224,14 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq
 		if(NETWORK_SCHEME == "CIRCUIT"):
-			print("Request " + str(self.threadID) + " starts with path:", end='')
+			#print("Request " + str(self.threadID) + " starts with path:", end='')
 			if(ROUTING_SCHEME == "SHP"):
 				path = circuit_SHP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "SDP"):
 				path = circuit_SDP(self.graph, self.source, self.destination)
 			else:
 				pass
-			print(path)
+			#print(path)
 			isBlock = False
 			Lock.acquire()
 			for i in range(len(path)-1):
@@ -250,7 +250,7 @@ class request (threading.Thread):
 				PDelays += delay
 			else:
 				NoOfBlkPkt += int(float(self.runTime) * PACKET_RATE)
-				print("Request " + str(self.threadID) + " has been blocked ")
+				#print("Request " + str(self.threadID) + " has been blocked ")
 			Lock.release()
 			if not isBlock:
 				# the time the connection lasts
@@ -260,7 +260,7 @@ class request (threading.Thread):
 				for i in range(len(path)-1):
 					self.graph.release(path[i],path[i+1])
 				Lock.release()
-				print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+				#print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
 def doRequest(threadID, graph, startTime, source, destination, runTime):
 	thread = request(threadID, graph, startTime, source, destination, runTime)
@@ -312,11 +312,11 @@ def main():
 	print("total number of virtual connection requests:", NoOfReq)
 	print("total number of packets:", NoOfAllPkt)
 	print("number of successfully routed packets:", NoOfSuccPkt)
-	print("percentage of successfully routed packets: {.2f}".format(NoOfSuccPkt/NoOfAllPkt*100))
+	print("percentage of successfully routed packets: {:.2f}".format(NoOfSuccPkt/NoOfAllPkt*100))
 	print("number of blocked packets:", NoOfBlkPkt)
-	print("percentage of blocked packets: {.2f}".format(NoOfBlkPkt/NoOfAllPkt*100))
-	print("average number of hops per circuit: {.2f}".format(NoOfHops/NoOfSuccReq*100))
-	print("average cumulative propagation delay per circuit: {.2f}".format(PDelays/NoOfSuccReq*100))
+	print("percentage of blocked packets: {:.2f}".format(NoOfBlkPkt/NoOfAllPkt*100))
+	print("average number of hops per circuit: {:.2f}".format(NoOfHops/NoOfSuccReq))
+	print("average cumulative propagation delay per circuit: {:.2f}".format(PDelays/NoOfSuccReq))
 
 if __name__ == "__main__":
 	main()
