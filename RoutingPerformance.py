@@ -8,6 +8,7 @@ from random import randint
 import threading
 import time
 
+########################## Input Arguments ##########################
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
@@ -20,6 +21,20 @@ WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = 2
 
+########################## Output  ##########################
+#The total number of virtual connection requests.
+NoOfReq = 0
+#The total number of packets.
+NoOfAllPkt = 0
+#The number (and percentage) of successfully routed packets.
+NoOfSuccPkt = 0
+#The number (and percentage) of blocked packets.
+NoOfBlkPkt = 0
+#The average number of hops (i.e. links) consumed per successfully routed circuit. 
+NoOfhops = []
+#The average source-to-destination cumulative propagation delay per successfully routed circuit.
+PDelays = []
+
 ########################## Graph ##########################
 class Graph:
 	# create a new graph
@@ -30,9 +45,9 @@ class Graph:
 		self.nE = 0
 		self.vSet = []
 	
-	# vertices v and w , delay d, link capacities c, status s
+	# vertices v and w , delay d, all capacities c, already used capacities s
 	# O(1)
-	def insertEdge(self,v,w,d,c,s = True):
+	def insertEdge(self,v,w,d,c,s = 0):
 		v = ord(v) - 65
 		w = ord(w) - 65
 		d = int(d)
@@ -51,34 +66,34 @@ class Graph:
 			w = ord(w) - 65
 		return (self.edges[v][w] != 0)
 	
-	# change activity to True
+	# occupy a capacity between v,w
 	# O(1)
-	def active(self,v,w):
+	def occupy(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		self.edges[v][w][2] = True
-		self.edges[w][v][2] = True
+		self.edges[v][w][2] += 1
+		self.edges[w][v][2] += 1
 
-	# change activity to False
+	# release a capacity between v,w
 	# O(1)
-	def disactive(self,v,w):
+	def realse(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		self.edges[v][w][2] = False
-		self.edges[w][v][2] = False
+		self.edges[v][w][2] -= 1
+		self.edges[w][v][2] -= 1
 	
-	# return whether edge is active (status = True)
+	# return whether edge is blocked
 	# O(1)
-	def isactivity(self,v,w):
+	def isBlock(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		return (self.edges[v][w][2] is True)
+		return (self.edges[v][w][0] == self.edges[v][w][2])
 	
 	# return delay
 	# O(1)
@@ -126,8 +141,8 @@ def SHP(graph,start,end):
 		visited.append(source)
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
-				if dist[i] > dist[source]:
-					dist[i] = dist[source]
+				if dist[i] > dist[source]+1:
+					dist[i] = dist[source]+1
 					pred[i] = source
 		start += 1
 		if start >= graph.nV:
@@ -173,19 +188,29 @@ def LLP():
 
 ########################## Thread ##########################
 class request (threading.Thread):
-	def __init__(self, threadID, runTime):
+	def __init__(self, threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
 		threading.Thread.__init__(self)
 		self.threadID = threadID
+		self.NETWORK_SCHEME = NETWORK_SCHEME
+		self.threadID = threadID
+		self.PACKET_RATE = PACKET_RATE
+		self.graph = graph
+		self.startTime = startTime
+		self.source = source
+		self.destination = destination
 		self.runTime = runTime
 	def run(self):
-		print("Request " + str(self.threadID) + " starts")
-		time.sleep(float(self.runTime))
-		print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+		if(self.NETWORK_SCHEME == "CIRCUIT"):
+			print("Request " + str(self.threadID) + " starts")
+			time.sleep(float(self.runTime))
+			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
-def doRequest(i, startTime, source, destination, runTime):
-	thread = request(i,runTime)
+def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
+	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime)
 	thread.start()
 	
+
+########################## Main ##########################
 def main():
 	# open and read TOPOLOGY_FILE
 	with open(TOPOLOGY_FILE) as f:
@@ -205,13 +230,18 @@ def main():
 	print(x)
 	print(y)
 	
+	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
 	# put requests into schedule
 	for i in range(len(requests)):
-		schedule.enter(float(requests[i][0]), 0, doRequest, (i, requests[i][0], requests[i][1], requests[i][2],requests[i][3]))
+		startTime = requests[i][0]
+		source = requests[i][1]
+		destination = requests[i][2]
+		runtime = requests[i][3]
+		schedule.enter(float(startTime), 0, doRequest, (i, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime))
 	
-#	schedule.run()
+	schedule.run()
 
 if __name__ == "__main__":
 	main()
