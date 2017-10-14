@@ -144,7 +144,7 @@ def circuit_SHP(graph,start,end):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
-			if graph.adjacent(source,i) and i not in visited:
+			if graph.adjacent(source,i):
 				if dist[i] > dist[source] + 1:
 					dist[i] = dist[source] + 1
 					pred[i] = source
@@ -178,7 +178,7 @@ def circuit_SDP(graph,start,end):
 		source = ord(graph.vSet[start])-65
 		visited.append(source)
 		for i in range(graph.nV):
-			if graph.adjacent(source,i) and i not in visited:
+			if graph.adjacent(source,i):
 				if dist[i] > dist[source] + graph.delay(source, i):
 					dist[i] = dist[source] + graph.delay(source, i)
 					pred[i] = source
@@ -210,6 +210,8 @@ def LLP():
 
 
 ########################## Thread ##########################
+Lock = threading.Lock()
+
 class request (threading.Thread):
 	def __init__(self, threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
 		threading.Thread.__init__(self)
@@ -226,7 +228,7 @@ class request (threading.Thread):
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
-			print("Request " + str(self.threadID) + " starts with path: ", end='')
+			print("Request " + str(self.threadID) + " starts with path:")
 			if(self.ROUTING_SCHEME == "SHP"):
 				path = circuit_SHP(self.graph, self.source, self.destination)
 			elif(self.ROUTING_SCHEME == "SDP"):
@@ -234,7 +236,21 @@ class request (threading.Thread):
 			else:
 				pass
 			print(path)
+			Lock.acquire()
+			isBlock = False
+			for i in range(len(path)-1):
+				isBlock = self.graph.isBlock(path[i],path[i+1])
+				# if this sub path is blocked then break the loop and the whole path is blocked
+				if isBlock:
+					break
+			# if the path is not blocked then get ont capacity of all the sub paths
+			if not isBlock:
+				for i in range(len(path)-1):
+					self.graph.occupy(path[i],path[i+1])
+			Lock.release()
 			time.sleep(float(self.runTime))
+			
+			
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
 def doRequest(threadID, NETWORK_SCHEME, ROUTING_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
