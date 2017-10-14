@@ -41,9 +41,9 @@ class Graph:
 	# O(nV^2)	nV = 26
 	def __init__(self,V = 26):
 		self.edges = [[0 for x in range(V)] for y in range(V)]
+		self.vSet = [chr(x+65) for x in range(V)]
 		self.nV = V
 		self.nE = 0
-		self.vSet = [chr(x+65) for x in range(self.nV)]
 	
 	# vertices v and w , delay d, all capacities c, already used capacities s
 	# O(1)
@@ -93,7 +93,7 @@ class Graph:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
-		return (self.edges[v][w][0] == self.edges[v][w][2])
+		return (self.edges[v][w][1] == self.edges[v][w][2])
 	
 	# return delay
 	# O(1)
@@ -104,14 +104,14 @@ class Graph:
 			w = ord(w) - 65
 		return self.edges[v][w][0]
 	
-	# return whether is node
-	# O(nV)
-	def validV(self,v):
-		if type(v) is str:
-			v = ord(v) - 65
-		for i in range(26):
-			if self.edges[v][i] != 0:
-				return True
+#	# return whether is node
+#	# O(nV)
+#	def validV(self,v):
+#		if type(v) is str:
+#			v = ord(v) - 65
+#		for i in range(self.nV):
+#			if self.edges[v][i] != 0:
+#				return True
 	
 #	# check the valid node and return as list
 #	# O(nV^2)	nV = 26
@@ -119,13 +119,13 @@ class Graph:
 #		self.vSet = [chr(x+65) for x in range(26) if self.validV(x)]
 #		self.nV = len(self.vSet)
 	
-	# print edges in graph
-	# O(nV^2)
-	def showGraph(self):
-		for i in range(self.nV):
-			for j in range(i+1,self.nV):
-				if self.edges[i][j] != 0:
-					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
+#	# print edges in graph
+#	# O(nV^2)
+#	def showGraph(self):
+#		for i in range(self.nV):
+#			for j in range(i+1,self.nV):
+#				if self.edges[i][j] != 0:
+#					print("{},{},{}".format(chr(i+65),chr(j+65),self.edges[i][j]))
 
 
 ########################## Route Scheme ##########################
@@ -192,6 +192,7 @@ def SDP(graph,start,end):
 
 def packet_SDP(graph,start,visited = []):
 	path = [start]
+	dist = float("inf")
 	for i in range(graph.nV):
 		node = chr(i+65)
 		if graph.adjacent(start,i) and node not in visited:
@@ -206,7 +207,7 @@ def LLP():
 
 ########################## Thread ##########################
 class request (threading.Thread):
-	def __init__(self, threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
+	def __init__(self, threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
 		threading.Thread.__init__(self)
 		self.threadID = threadID
 		self.NETWORK_SCHEME = NETWORK_SCHEME
@@ -217,14 +218,15 @@ class request (threading.Thread):
 		self.source = source
 		self.destination = destination
 		self.runTime = runTime
+	
 	def run(self):
 		if(self.NETWORK_SCHEME == "CIRCUIT"):
 			print("Request " + str(self.threadID) + " starts")
 			time.sleep(float(self.runTime))
 			print("Request " + str(self.threadID) + " runs " + str(self.runTime))
 
-def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime):
-	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runtime)
+def doRequest(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime):
+	thread = request(threadID, NETWORK_SCHEME, PACKET_RATE, graph, startTime, source, destination, runTime)
 	thread.start()
 	
 
@@ -243,11 +245,10 @@ def main():
 		graph.insertEdge(router[0], router[1], router[2], router[3])
 #	graph._vSet()
 	
-	x = SHP(graph, 'A', 'C')
-	y = SDP(graph, 'A', 'O')
+	x = packet_SHP(graph, 'A', 'C')
+	y = packet_SDP(graph, 'A', 'O')
 	print(x)
 	print(y)
-	
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
