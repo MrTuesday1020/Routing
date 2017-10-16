@@ -222,13 +222,16 @@ def circuit_LLP(graph,start,end):
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
 				adjed.append(i)
+				
 				if dist[i] > dist[source] + graph.ratio(source, i):
 					dist[i] = dist[source] + graph.ratio(source, i)
 					pred[i] = source
 		visited.append(source)
 	path = [end]
 	end = ord(end)-65
+	rat = []
 	while dist[ord(path[-1])-65] != 0:
+		ration.append(graph.ratio(end,pred[end]))
 		end = pred[end]
 		path.append(chr(end+65))
 	path.reverse()
