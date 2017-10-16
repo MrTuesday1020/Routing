@@ -22,7 +22,8 @@ WORKLOAD_FILE = sys.argv[4]
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = int(sys.argv[5])
 
-blocklist = []
+timeScale = 10
+
 ########################## Output  ##########################
 # The total number of virtual connection requests.
 NoOfReq = 0
@@ -115,6 +116,20 @@ class Graph:
 		if type(w) is str:
 			w = ord(w) - 65
 		return (self.edges[v][w][1]-self.edges[v][w][2])/self.edges[v][w][1]
+		
+	def up(self,v,w):
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
+		return (self.edges[v][w][1]-self.edges[v][w][2])
+		
+	def down(self,v,w):
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
+		return self.edges[v][w][1]
 	
 #	# return whether is node
 #	# O(nV)
@@ -194,8 +209,12 @@ def SDP(graph,start,end):
 
 # Least Loaded Path
 def LLP(graph,start,end):
-	dist = [float("inf") for x in range(graph.nV)]
-	dist[ord(start)-65] = 0
+	dist_up = [float("-inf") for x in range(graph.nV)]
+	dist_down = [float("-inf") for x in range(graph.nV)]
+	dist_ratio = [float("-inf") for x in range(graph.nV)]
+	dist_ratio[ord(start)-65] = 0
+	dist_down[ord(start)-65] = 0
+	dist_up[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
 	start = ord(start)-65
 	adjed = [start]
@@ -206,24 +225,52 @@ def LLP(graph,start,end):
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
 				adjed.append(i)
-				if graph.ratio(source,i) > great_node:
-					great_node = graph.ratio(source,i)
-				if dist[i] > dist[source] + great_node:
-					dist[i] = dist[source] + great_node
+				if dist_ratio[i] < (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i)):
+#					if graph.ratio(source,i) == 1:
+					dist_up[i] = dist_up[source] + graph.up(source,i)
+					dist_down[i] = dist_down[source] + graph.down(source,i)
+					dist_ratio[i] = (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i))
 					pred[i] = source
-#				if dist[i] > dist[source] + graph.ratio(source, i):
-#					dist[i] = dist[source] + graph.ratio(source, i)
-#					pred[i] = source
-#		print(great_node)
+				#print()
 		visited.append(source)
 	path = [end]
 	end = ord(end)-65
-	while dist[ord(path[-1])-65] != 0:
+	while dist_ratio[ord(path[-1])-65] != 0:
 		end = pred[end]
 		path.append(chr(end+65))
 	path.reverse()
 	return path
-
+	
+def dfs_LLP(graph,start,end):
+	temp_path = [start]
+	q = []
+	q.append(temp_path)
+	paths = []
+	
+	while len(q) != 0:
+		tmp_path = q.pop()
+		last_node = tmp_path[len(tmp_path)-1]
+		if last_node == end:
+			paths.append(tmp_path)
+		for i in range(graph.nV):
+			link_node = chr(i+65)
+			if graph.adjacent(last_node,link_node):
+				if link_node not in tmp_path:
+					new_path = tmp_path + [link_node]
+					q.append(new_path)
+	great_ratio = float("-inf")
+	for path in paths:
+		path_up = 0
+		path_down = 0
+		for node in range(len(path)-1):
+			path_up += graph.up(path[node],path[node+1])
+			path_down += graph.down(path[node],path[node+1])
+		path_ratio = path_up/path_down
+		if path_ratio > great_ratio:
+			great_ratio = path_ratio
+			great_path = path
+	print(great_path)
+	return great_path
 
 ########################## Thread ##########################
 Lock = threading.Lock()
@@ -246,7 +293,7 @@ class request (threading.Thread):
 			interval = self.runTime
 		# PACKET network: the request should establish connection every 1/PACKET_RATE seconds
 		elif(NETWORK_SCHEME == "PACKET"):
-			interval = 0.1 / PACKET_RATE
+			interval = 1 / PACKET_RATE / timeScale
 		
 		currentTime = 0.0
 		while currentTime < self.runTime:
@@ -257,11 +304,10 @@ class request (threading.Thread):
 			elif(ROUTING_SCHEME == "SDP"):
 				path = SDP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "LLP"):
-				path = LLP(self.graph, self.source, self.destination)
+				path = dfs_LLP(self.graph, self.source, self.destination)
 			else:
 				pass
 #			print(path)
-
 			Lock.acquire()
 			isBlock = False
 			for i in range(len(path)-1):
@@ -273,14 +319,13 @@ class request (threading.Thread):
 			if not isBlock:
 				for i in range(len(path)-1):
 					self.graph.occupy(path[i],path[i+1])
-				NoOfSuccPkt += int(interval * PACKET_RATE * 10)
+				NoOfSuccPkt += int(interval * PACKET_RATE * timeScale)
 				NoOfSuccReq += 1
 				NoOfHops += len(path)
 				delay = self.graph.delay(path[i],path[i+1])
 				PDelays += delay
 			else:
-				NoOfBlkPkt += int(interval * PACKET_RATE * 10)
-				blocklist.append(self.threadID)
+				NoOfBlkPkt += int(interval * PACKET_RATE * timeScale)
 #				print("Request " + str(self.threadID) + " has been blocked ")
 			Lock.release()
 			if not isBlock:
@@ -326,7 +371,7 @@ def main():
 	
 #	x = SHP(graph, 'K', 'D')
 #	y = SDP(graph, 'F', 'L')
-#	z = LLP(graph, 'K', 'D')
+#	z = dfs_LLP(graph, 'K', 'D')
 #	print(x)
 #	print(y)
 #	print(z)
@@ -335,10 +380,10 @@ def main():
 	schedule = sched.scheduler (time.time, time.sleep)
 	# put requests into schedule
 	for i in range(len(requests)):
-		startTime = float(requests[i][0])/10
+		startTime = float(requests[i][0]) / timeScale
 		source = requests[i][1]
 		destination = requests[i][2]
-		runTime = float(requests[i][3])/10
+		runTime = float(requests[i][3]) / timeScale
 		schedule.enter(startTime, 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
 	start  = time.time()
