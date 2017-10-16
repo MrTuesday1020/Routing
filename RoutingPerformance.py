@@ -5,6 +5,7 @@
 
 import sched, time
 from random import randint
+from random import choice
 import threading
 import time
 
@@ -12,7 +13,7 @@ import time
 # network type values: CIRCUIT or PACKET
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = "LLP"
+ROUTING_SCHEME = "SDP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
@@ -129,6 +130,13 @@ class Graph:
 			w = ord(w) - 65
 		return self.edges[v][w][1]
 	
+	def return_s(self,v,w):
+		if type(v) is str:
+			v = ord(v) - 65
+		if type(w) is str:
+			w = ord(w) - 65
+		return self.edges[v][w][2]
+	
 #	# return whether is node
 #	# O(nV)
 #	def validV(self,v):
@@ -170,6 +178,8 @@ def SHP(graph,start,end):
 				if dist[i] > dist[source] + 1:
 					dist[i] = dist[source] + 1
 					pred[i] = source
+				elif dist[i] == dist[source] + 1:
+					pred[i] = choice([source,pred[i]])
 		visited.append(source)
 	path = [end]
 	end = ord(end)-65
@@ -196,6 +206,8 @@ def SDP(graph,start,end):
 				if dist[i] > dist[source] + graph.delay(source, i):
 					dist[i] = dist[source] + graph.delay(source, i)
 					pred[i] = source
+				elif dist[i] == dist[source] + graph.delay(source,i):
+					pred[i] = choice([source,pred[i]])
 		visited.append(source)
 	path = [end]
 	end = ord(end)-65
@@ -207,14 +219,11 @@ def SDP(graph,start,end):
 
 # Least Loaded Path
 def LLP(graph,start,end):
-	dist_up = [float("-inf") for x in range(graph.nV)]
-	dist_down = [float("-inf") for x in range(graph.nV)]
-	dist_ratio = [float("-inf") for x in range(graph.nV)]
-	dist_ratio[ord(start)-65] = 0
-	dist_down[ord(start)-65] = 0
-	dist_up[ord(start)-65] = 0
-	pred = [ -1 for x in range(graph.nV)]
 	start = ord(start)-65
+	dist = [float("inf") for x in range(graph.nV)]
+	dist[start] = 0
+	pred = [ -1 for x in range(graph.nV)]
+	pred[start] = 0
 	adjed = [start]
 	visited = [start]
 	while len(adjed) != 0:
@@ -222,18 +231,22 @@ def LLP(graph,start,end):
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
 				adjed.append(i)
-				
-				if dist_ratio[i] < (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i)):
-#					if graph.ratio(source,i) == 1:
-					dist_up[i] = dist_up[source] + graph.up(source,i)
-					dist_down[i] = dist_down[source] + graph.down(source,i)
-					dist_ratio[i] = (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i))
+				tmp = graph.return_s(source,i)*10000 / graph.down(source,i)
+				if dist[i] > max(dist[source], tmp):
+					dist[i] = max(dist[source], tmp)
 					pred[i] = source
-				#print()
+				elif dist[i] == max(dist[source], tmp):
+					pred[i] = choice([source, pred[i]])
+				
+#				if dist_ratio[i] < (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i)):
+#					dist_up[i] = dist_up[source] + graph.up(source,i)
+#					dist_down[i] = dist_down[source] + graph.down(source,i)
+#					dist_ratio[i] = (dist_up[source] + graph.up(source,i))/(dist_down[source] + graph.down(source,i))
+#					pred[i] = source
 		visited.append(source)
 	path = [end]
 	end = ord(end)-65
-	while dist_ratio[ord(path[-1])-65] != 0:
+	while pred[ord(path[-1])-65] != 0:
 		end = pred[end]
 		path.append(chr(end+65))
 	path.reverse()
@@ -302,7 +315,7 @@ class request (threading.Thread):
 			elif(ROUTING_SCHEME == "SDP"):
 				path = SDP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "LLP"):
-				path = dfs_LLP(self.graph, self.source, self.destination)
+				path = LLP(self.graph, self.source, self.destination)
 			else:
 				pass
 			#print(path)
