@@ -10,16 +10,16 @@ import time
 
 ########################## Input Arguments ##########################
 # network type values: CIRCUIT or PACKET
-NETWORK_SCHEME = "CIRCUIT"
+NETWORK_SCHEME = "PACKET"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = "LLP"
+ROUTING_SCHEME = "SDP"
 # a file contains the network topology specification
 TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
 # workload_small.txt or workload.txt
 WORKLOAD_FILE = "workload_small.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
-PACKET_RATE = 2
+PACKET_RATE = 3
 
 
 ########################## Output  ##########################
@@ -141,7 +141,7 @@ class Graph:
 ########################## Route Scheme ##########################
 # Shortest Hop Path
 # O(nV^2)
-def circuit_SHP(graph,start,end):
+def SHP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
@@ -165,16 +165,9 @@ def circuit_SHP(graph,start,end):
 	path.reverse()
 	return path
 
-def packet_SHP(graph,start,visited = []):
-	path = [start]
-	for i in range(graph.nV):
-		node = chr(i+65)
-		if graph.adjacent(start,i) and node not in visited:
-			return path+[node]
-
 # Shortest Delay Path
 # O(nV^2)
-def circuit_SDP(graph,start,end):
+def SDP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
@@ -198,19 +191,8 @@ def circuit_SDP(graph,start,end):
 	path.reverse()
 	return path
 
-def packet_SDP(graph,start,visited = []):
-	path = [start]
-	dist = float("inf")
-	for i in range(graph.nV):
-		node = chr(i+65)
-		if graph.adjacent(start,i) and node not in visited:
-			if dist > graph.delay(start,i):
-				dist = graph.delay(start,i)
-				return_node = node
-	return path+[return_node]
-
 # Least Loaded Path
-def circuit_LLP(graph,start,end):
+def LLP(graph,start,end):
 	dist = [float("inf") for x in range(graph.nV)]
 	dist[ord(start)-65] = 0
 	pred = [ -1 for x in range(graph.nV)]
@@ -237,16 +219,6 @@ def circuit_LLP(graph,start,end):
 	path.reverse()
 	return path
 
-def packet_SDP(graph,start,visited = []):
-	path = [start]
-	dist = float("inf")
-	for i in range(graph.nV):
-		node = chr(i+65)
-		if graph.adjacent(start,i) and node not in visited:
-			if dist > graph.ratio(start,i):
-				dist = graph.ratio(start,i)
-				return_node = node
-	return path+[return_node]
 
 ########################## Thread ##########################
 Lock = threading.Lock()
@@ -264,14 +236,23 @@ class request (threading.Thread):
 	
 	def run(self):
 		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq
+		# CIRCUIT network: the connection is established from start to end
 		if(NETWORK_SCHEME == "CIRCUIT"):
+			interval = float(self.runTime)
+		# PACKET network: the request should establish connection every 1/PACKET_RATE seconds
+		elif(NETWORK_SCHEME == "PACKET"):
+			interval = 1 / PACKET_RATE
+		
+		currentTime = 0.0
+		while currentTime < float(self.runTime):
+			currentTime += interval
 			print("Request " + str(self.threadID) + " starts with path:", end='')
 			if(ROUTING_SCHEME == "SHP"):
-				path = circuit_SHP(self.graph, self.source, self.destination)
+				path = SHP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "SDP"):
-				path = circuit_SDP(self.graph, self.source, self.destination)
+				path = SDP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "LLP"):
-				path = circuit_LLP(self.graph, self.source, self.destination)
+				path = LLP(self.graph, self.source, self.destination)
 			else:
 				pass
 			print(path)
@@ -287,24 +268,27 @@ class request (threading.Thread):
 			if not isBlock:
 				for i in range(len(path)-1):
 					self.graph.occupy(path[i],path[i+1])
-				NoOfSuccPkt += int(float(self.runTime) * PACKET_RATE)
+				NoOfSuccPkt += int(interval * PACKET_RATE)
 				NoOfSuccReq += 1
 				NoOfHops += len(path)
 				delay = self.graph.delay(path[i],path[i+1])
 				PDelays += delay
 			else:
-				NoOfBlkPkt += int(float(self.runTime) * PACKET_RATE)
-				#print("Request " + str(self.threadID) + " has been blocked ")
+				NoOfBlkPkt += int(interval * PACKET_RATE)
+				print("Request " + str(self.threadID) + " has been blocked ")
 			Lock.release()
 			if not isBlock:
 				# the time the connection lasts
-				time.sleep(float(self.runTime))
+				time.sleep(interval)
 				# release resources
 				Lock.acquire()
 				for i in range(len(path)-1):
 					self.graph.release(path[i],path[i+1])
 				Lock.release()
-				#print("Request " + str(self.threadID) + " runs " + str(self.runTime))
+				if(NETWORK_SCHEME == "CIRCUIT"):
+					print("Request " + str(self.threadID) + " durates {:.6f}".format(interval))
+				else:
+					print("Request " + str(self.threadID) + " starts a request after {:.6f}".format(currentTime - interval))
 
 def doRequest(threadID, graph, startTime, source, destination, runTime):
 	thread = request(threadID, graph, startTime, source, destination, runTime)
@@ -336,10 +320,10 @@ def main():
 	
 #	x = SHP(graph, 'K', 'D')
 #	y = SDP(graph, 'F', 'L')
-	z = circuit_LLP(graph, 'K', 'D')
+#	z = LLP(graph, 'K', 'D')
 #	print(x)
 #	print(y)
-	print(z)
+#	print(z)
 	
 	# init a schedule
 	schedule = sched.scheduler (time.time, time.sleep)
@@ -351,19 +335,22 @@ def main():
 		runTime = requests[i][3]
 		schedule.enter(float(startTime), 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
+	start  = time.time()
 	schedule.run()
 	
 	for t in threads:
 		t.join()
 	
+	print("RuntTime:{:.2f}".format(time.time()-start))
+	
 	print("total number of virtual connection requests:", NoOfReq)
 	print("total number of packets:", NoOfAllPkt)
 	print("number of successfully routed packets:", NoOfSuccPkt)
-	print("percentage of successfully routed packets: {:.2f}".format(NoOfSuccPkt/NoOfAllPkt*100))
+	print("percentage of successfully routed packets: {:.2f}".format(NoOfSuccPkt / NoOfAllPkt * 100))
 	print("number of blocked packets:", NoOfBlkPkt)
-	print("percentage of blocked packets: {:.2f}".format(NoOfBlkPkt/NoOfAllPkt*100))
-	print("average number of hops per circuit: {:.2f}".format(NoOfHops/NoOfSuccReq))
-	print("average cumulative propagation delay per circuit: {:.2f}".format(PDelays/NoOfSuccReq))
+	print("percentage of blocked packets: {:.2f}".format(NoOfBlkPkt / NoOfAllPkt * 100))
+	print("average number of hops per circuit: {:.2f}".format(NoOfHops / NoOfSuccReq))
+	print("average cumulative propagation delay per circuit: {:.2f}".format(PDelays / NoOfSuccReq))
 
 if __name__ == "__main__":
 	main()
