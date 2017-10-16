@@ -8,20 +8,22 @@ from random import randint
 from random import choice
 import threading
 import time
+import sys
 
 ########################## Input Arguments ##########################
 # network type values: CIRCUIT or PACKET
-NETWORK_SCHEME = "CIRCUIT"
+NETWORK_SCHEME = sys.argv[1]
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = "SDP"
+ROUTING_SCHEME = sys.argv[2]
 # a file contains the network topology specification
-TOPOLOGY_FILE = "topology.txt"
+TOPOLOGY_FILE = sys.argv[3]
 # a file contains the virtual connection requests in the network
 # workload_small.txt or workload.txt
-WORKLOAD_FILE = "workload_small.txt"
+WORKLOAD_FILE = sys.argv[4]
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
-PACKET_RATE = 3
+PACKET_RATE = int(sys.argv[5])
 
+timeScale = 10
 
 ########################## Output  ##########################
 # The total number of virtual connection requests.
@@ -228,6 +230,7 @@ def LLP(graph,start,end):
 	visited = [start]
 	while len(adjed) != 0:
 		source = adjed.pop()
+		great_node = float("-inf")
 		for i in range(graph.nV):
 			if graph.adjacent(source,i) and i not in visited:
 				adjed.append(i)
@@ -298,18 +301,18 @@ class request (threading.Thread):
 		self.runTime = runTime
 	
 	def run(self):
-		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq
+		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq, blocklist
 		# CIRCUIT network: the connection is established from start to end
 		if(NETWORK_SCHEME == "CIRCUIT"):
-			interval = float(self.runTime)
+			interval = self.runTime
 		# PACKET network: the request should establish connection every 1/PACKET_RATE seconds
 		elif(NETWORK_SCHEME == "PACKET"):
-			interval = 1 / PACKET_RATE
+			interval = 1 / PACKET_RATE / timeScale
 		
 		currentTime = 0.0
-		while currentTime < float(self.runTime):
+		while currentTime < self.runTime:
 			currentTime += interval
-			#print("Request " + str(self.threadID) + " starts with path:", end='')
+#			print("Request " + str(self.threadID) + " starts with path:", end='')
 			if(ROUTING_SCHEME == "SHP"):
 				path = SHP(self.graph, self.source, self.destination)
 			elif(ROUTING_SCHEME == "SDP"):
@@ -318,8 +321,7 @@ class request (threading.Thread):
 				path = LLP(self.graph, self.source, self.destination)
 			else:
 				pass
-			#print(path)
-
+#			print(path)
 			Lock.acquire()
 			isBlock = False
 			for i in range(len(path)-1):
@@ -331,15 +333,14 @@ class request (threading.Thread):
 			if not isBlock:
 				for i in range(len(path)-1):
 					self.graph.occupy(path[i],path[i+1])
-				NoOfSuccPkt += int(interval * PACKET_RATE)
+				NoOfSuccPkt += int(interval * PACKET_RATE * timeScale)
 				NoOfSuccReq += 1
 				NoOfHops += len(path)
 				delay = self.graph.delay(path[i],path[i+1])
 				PDelays += delay
 			else:
-				NoOfBlkPkt += int(interval * PACKET_RATE)
-				print(path)
-				print("Request " + str(self.threadID) + " has been blocked ")
+				NoOfBlkPkt += int(interval * PACKET_RATE * timeScale)
+#				print("Request " + str(self.threadID) + " has been blocked ")
 			Lock.release()
 			if not isBlock:
 				# the time the connection lasts
@@ -349,10 +350,10 @@ class request (threading.Thread):
 				for i in range(len(path)-1):
 					self.graph.release(path[i],path[i+1])
 				Lock.release()
-				if(NETWORK_SCHEME == "CIRCUIT"):
-					print("Request " + str(self.threadID) + " durates {:.6f}".format(interval))
-				else:
-					print("Request " + str(self.threadID) + " starts a request after {:.6f}".format(currentTime - interval))
+#				if(NETWORK_SCHEME == "CIRCUIT"):
+#					print("Request " + str(self.threadID) + " durates {:.6f}".format(interval))
+#				else:
+#					print("Request " + str(self.threadID) + " starts a request after {:.6f}".format(currentTime - interval))
 
 def doRequest(threadID, graph, startTime, source, destination, runTime):
 	thread = request(threadID, graph, startTime, source, destination, runTime)
@@ -393,13 +394,14 @@ def main():
 	schedule = sched.scheduler (time.time, time.sleep)
 	# put requests into schedule
 	for i in range(len(requests)):
-		startTime = requests[i][0]
+		startTime = float(requests[i][0]) / timeScale
 		source = requests[i][1]
 		destination = requests[i][2]
-		runTime = requests[i][3]
-		schedule.enter(float(startTime), 0, doRequest, (i, graph, startTime, source, destination, runTime))
+		runTime = float(requests[i][3]) / timeScale
+		schedule.enter(startTime, 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
 	start  = time.time()
+	
 	schedule.run()
 	
 	for t in threads:
