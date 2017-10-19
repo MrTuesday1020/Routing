@@ -22,7 +22,7 @@ WORKLOAD_FILE = sys.argv[4]
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 PACKET_RATE = int(sys.argv[5])
 
-timeScale = 10
+timeScale = 5
 
 ########################## Output  ##########################
 # The total number of virtual connection requests.
@@ -269,7 +269,7 @@ def dfs_LLP(graph,start,end):
 		if path_ratio > great_ratio:
 			great_ratio = path_ratio
 			great_path = path
-	print(great_path)
+#	print(great_path)
 	return great_path
 
 ########################## Thread ##########################
