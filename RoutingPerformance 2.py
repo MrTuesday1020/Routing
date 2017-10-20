@@ -5,7 +5,7 @@ import sys
 import heapq
 from random import choice
 
-pNETWORK_SCHEME = "CIRCUIT"
+NETWORK_SCHEME = "CIRCUIT"
 ROUTING_SCHEME = "SHP"
 PACKET_RATE = 10
 
@@ -57,6 +57,10 @@ class Node(object):
         self.end_time = end_time
         self.next = None 
 
+def path_record_initial(sourceId):
+    global path_record
+    for i in range(26):
+        path_record[i] = sourceId
 
 def getEdge(sourceId, dstId):
     name = ""
@@ -65,6 +69,117 @@ def getEdge(sourceId, dstId):
     else:
         name = dstId + sourceId
     return graph.get(name)
+
+# initial of model of network, as show before, we use 2-dimensional array to describe one network
+# we assume the input file is topology.txt
+def graph_initial():
+    global graph
+    if not os.path.exists(topology_file_path):
+        print "topology.txt is not exist, please add it!"
+        exit()
+
+    file = open(topology_file_path)
+    for line in file:
+        line = line.rstrip('\n')
+        line_list = line.split(' ')
+        if (len(line_list) != 4) :
+            print "file format is wrong, and line is " + line
+            exit()
+        else:
+            name = ""
+            if ord(line_list[0]) > ord(line_list[1]):
+                name = line_list[1]+line_list[0]
+            else:
+                name = line_list[0]+line_list[1]
+
+            if not graph.has_key(name):
+                graph[name] = Edge(name, int(line_list[2]), int(line_list[3]))
+
+# step one of dijkstra
+def initial_cost_array(sourceId):
+    cost_array = [0 for i in range(26)]
+    for i in range(26):
+        edge = getEdge(sourceId, chr(i + ord('A')))
+        if ROUTING_SCHEME == "SHP":
+            if edge != None:
+                cost_array[i] = 1
+            else:
+                cost_array[i] = sys.maxint
+        elif ROUTING_SCHEME == "SDP":
+            if edge != None:
+                cost_array[i] = edge.delay
+            else:
+                cost_array[i] = sys.maxint
+        else:
+            if edge != None:
+                cost_array[i] = len(edge.connect_end_time)*10000 / edge.capacity
+            else:
+                cost_array[i] = sys.maxint
+    return cost_array
+
+# step four of dijkstra
+def update_cost_array(current_node, temp_min_node, cost_array):
+    global path_record
+    edge = getEdge(current_node, temp_min_node)
+    if edge != None:
+        i = ord(current_node) - ord('A')
+        j = ord(temp_min_node) - ord('A')
+        if ROUTING_SCHEME == "SHP":
+            if cost_array[i] > cost_array[j] + 1:
+                cost_array[i] = cost_array[j] + 1
+                path_record[i] = temp_min_node
+            elif cost_array[i] == cost_array[j] + 1:
+                path_record[i] = choice([temp_min_node, path_record[i]])
+        elif ROUTING_SCHEME == "SDP":
+            if cost_array[i] > cost_array[j] + edge.delay:
+                cost_array[i] = cost_array[j] + edge.delay
+                path_record[i] = temp_min_node
+            elif cost_array[i] == cost_array[j] + edge.delay:
+                path_record[i] = choice([temp_min_node, path_record[i]])
+        else:
+            load = len(edge.connect_end_time)
+            if cost_array[i] > max(cost_array[j], load*10000 / edge.capacity):
+                cost_array[i] = max(cost_array[j], load*10000 / edge.capacity)
+                path_record[i] = temp_min_node
+            elif cost_array[i] == max(cost_array[j], load*10000 / edge.capacity):
+                path_record[i] = choice([temp_min_node, path_record[i]])
+
+def dijkstra(sourceId, dstId):
+    visited_node = [False for k in range(26)]
+    visited_node[ord(sourceId) - ord('A')] = True
+
+    # step one : initial the least cost array
+    cost_array = initial_cost_array(sourceId)
+
+    # step two: initial the path_record
+    path_record_initial(sourceId)
+
+    while True:
+        # step three: find min
+        temp_min = sys.maxint
+        random_array = []
+        for i in range(26):
+            if visited_node[i] == False:
+                if cost_array[i] < temp_min:
+                    temp_min = cost_array[i]
+                    random_array = [i]
+                elif cost_array[i] == temp_min:
+                    random_array.append(i)
+        # there is no connect from source to destination
+        if len(random_array) == 0:
+            return False
+
+        temp_min_node = chr(choice(random_array) + ord('A'))
+
+        if temp_min_node == dstId:
+            return True
+
+        visited_node[ord(temp_min_node) - ord('A')] = True
+
+        # step four: update
+        for i in range(26):
+            if (visited_node[i] == False): 
+                update_cost_array(chr(i + ord('A')), temp_min_node, cost_array)
 
 def put_node(node, linkedList):
     if linkedList.next == None:
@@ -241,7 +356,13 @@ def handle_workload():
         total_number_request += 1
         total_number_packet += num_packet
 
+#NETWORK_SCHEME = sys.argv[1]
+#ROUTING_SCHEME = sys.argv[2]
+#topology_file_path = sys.argv[3]
+#workload_file_path = sys.argv[4]
+#PACKET_RATE = int(sys.argv[5])
 
+graph_initial()
 if NETWORK_SCHEME == "CIRCUIT":
     handle_workload()
 else:
