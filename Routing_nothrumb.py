@@ -13,18 +13,22 @@ import sys
 
 ########################## Input Arguments ##########################
 # network type values: CIRCUIT or PACKET
-NETWORK_SCHEME = sys.argv[1]
+# NETWORK_SCHEME = sys.argv[1]
+NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
-ROUTING_SCHEME = sys.argv[2]
+# ROUTING_SCHEME = sys.argv[2]
+ROUTING_SCHEME = "SDP"
 # a file contains the network topology specification
-TOPOLOGY_FILE = sys.argv[3]
+# TOPOLOGY_FILE = sys.argv[3]
+TOPOLOGY_FILE = "topology.txt"
 # a file contains the virtual connection requests in the network
 # workload_small.txt or workload.txt
-WORKLOAD_FILE = sys.argv[4]
+# WORKLOAD_FILE = sys.argv[4]
+WORKLOAD_FILE = "workload.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
-PACKET_RATE = int(sys.argv[5])
+# PACKET_RATE = int(sys.argv[5])
+PACKET_RATE = 2
 
-timeScale = 10
 
 ########################## Output  ##########################
 # The total number of virtual connection requests.
@@ -42,8 +46,6 @@ PDelays = 0
 # The total number of success requests
 NoOfSuccReq = 0
 
-block_number_request = 0
-
 ########################## Graph ##########################
 class Graph:
 	# create a new graph
@@ -54,15 +56,15 @@ class Graph:
 		self.nV = V
 		self.nE = 0
 	
-	# vertices v and w , delay d, all capacities c, already used capacities s
-	def insertEdge(self,v,w,d,c,s = 0):
+	# vertices v and w ,
+	def insertEdge(self, v, w, delay, capacity, time_list = []):
 		v = ord(v) - 65
 		w = ord(w) - 65
-		d = int(d)
-		c = int(c)
+		delay = int(delay)
+		capacity = int(capacity)
 		if self.edges[v][w] == 0:
-			self.edges[v][w] = [d,c,s];
-			self.edges[w][v] = [d,c,s];
+			self.edges[v][w] = [delay, capacity, time_list];
+			self.edges[w][v] = [delay, capacity, time_list];
 			self.myedge[v].append(w)
 			self.myedge[w].append(v)
 			self.nE += 1;
@@ -101,16 +103,16 @@ class Graph:
 			w = ord(w) - 65
 		return self.edges[v][w][0]
 	
-	# return already used capacities s
-	def s(self,v,w):
+	# return already used capacities
+	def used_capacity(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
 			w = ord(w) - 65
 		return self.edges[v][w][2]
 	
-	# return capacities c
-	def c(self,v,w):
+	# return capacities
+	def capacity(self,v,w):
 		if type(v) is str:
 			v = ord(v) - 65
 		if type(w) is str:
@@ -155,7 +157,7 @@ def dijkstra(graph,start,end):
 					elif dist[i] == dist[source] + 1:
 						pred[i] = choice([source,pred[i]])
 				elif ROUTING_SCHEME == "LLP":
-					tmp = graph.s(source,i)*10000 / graph.c(source,i)
+					tmp = graph.used_capacity(source,i)*10000 / graph.capacity(source,i)
 					if dist[i] > max(dist[source], tmp):
 						dist[i] = max(dist[source], tmp)
 						pred[i] = source
@@ -170,79 +172,10 @@ def dijkstra(graph,start,end):
 	path.reverse()
 	return path
 
-########################## Thread ##########################
-Lock = threading.Lock()
-threads = []
-
-class request (threading.Thread):
-	def __init__(self, threadID, graph, startTime, source, destination, runTime):
-		threading.Thread.__init__(self)
-		self.threadID = threadID
-		self.graph = graph
-		self.startTime = startTime
-		self.source = source
-		self.destination = destination
-		self.runTime = runTime
-	
-	def run(self):
-		global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, NoOfSuccReq, blocklist
-		# CIRCUIT network: the connection is established from start to end
-		if(NETWORK_SCHEME == "CIRCUIT"):
-			interval = self.runTime
-		# PACKET network: the request should establish connection every 1/PACKET_RATE seconds
-		elif(NETWORK_SCHEME == "PACKET"):
-			interval = 1 / PACKET_RATE / timeScale
-		
-		currentTime = 0.0
-		while currentTime < self.runTime:
-			currentTime += interval
-			print("Request " + str(self.threadID) + " starts with path:", end='')
-			path = dijkstra(self.graph, self.source, self.destination)
-			print(path)
-			Lock.acquire()
-			isBlock = False
-			for i in range(len(path)-1):
-				isBlock = self.graph.isBlock(path[i],path[i+1])
-				# if this sub path is blocked then break the loop and the whole path is blocked
-				if isBlock:
-					print(path)
-					break
-			# if the path is not blocked then get ont capacity of all the sub paths
-			if not isBlock:
-				for i in range(len(path)-1):
-					self.graph.occupy(path[i],path[i+1])
-				NoOfSuccPkt += int(interval * PACKET_RATE * timeScale)
-				NoOfSuccReq += 1
-				NoOfHops += len(path)
-				delay = self.graph.delay(path[i],path[i+1])
-				PDelays += delay
-			else:
-				NoOfBlkPkt += int(interval * PACKET_RATE * timeScale)
-#				print("Request " + str(self.threadID) + " has been blocked ")
-			Lock.release()
-			if not isBlock:
-				# the time the connection lasts
-				time.sleep(interval)
-				# release resources
-				Lock.acquire()
-				for i in range(len(path)-1):
-					self.graph.release(path[i],path[i+1])
-				Lock.release()
-#				if(NETWORK_SCHEME == "CIRCUIT"):
-#					print("Request " + str(self.threadID) + " durates {:.6f}".format(interval))
-#				else:
-#					print("Request " + str(self.threadID) + " starts a request after {:.6f}".format(currentTime - interval))
-
-def doRequest(threadID, graph, startTime, source, destination, runTime):
-	thread = request(threadID, graph, startTime, source, destination, runTime)
-	thread.start()
-	global threads
-	threads.append(thread)
-
 
 ########################## Main ##########################
 def main():
-	global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays, threads
+	global NoOfReq, NoOfAllPkt, NoOfSuccPkt, NoOfBlkPkt, NoOfHops, PDelays
 	
 	# graph initial
 	# open and read TOPOLOGY_FILE
@@ -257,39 +190,23 @@ def main():
 		requests = [line.strip().split(" ") for line in f]
 	
 	# compute statistics
+	# request[0]: start time, request[1]: source, request[2]:destination, request[3]:duration
 	NoOfReq = len(requests)	
 	for request in requests:
 		NoOfAllPkt += int(float(request[3]) * PACKET_RATE)
+		path = 
 		
 	
 	
-	# init a schedule
-	schedule = sched.scheduler (time.time, time.sleep)
-	# put requests into schedule
-	for i in range(len(requests)):
-		startTime = float(requests[i][0]) / timeScale
-		source = requests[i][1]
-		destination = requests[i][2]
-		runTime = float(requests[i][3]) / timeScale
-		schedule.enter(startTime, 0, doRequest, (i, graph, startTime, source, destination, runTime))
 	
-	start  = time.time()
-	
-	schedule.run()
-	
-	for t in threads:
-		t.join()
-	
-	print("RuntTime:{:.2f}".format(time.time()-start))
-	
-	print("total number of virtual connection requests:", NoOfReq)
-	print("total number of packets:", NoOfAllPkt)
-	print("number of successfully routed packets:", NoOfSuccPkt)
-	print("percentage of successfully routed packets: {:.2f}".format(NoOfSuccPkt / NoOfAllPkt * 100))
-	print("number of blocked packets:", NoOfBlkPkt)
-	print("percentage of blocked packets: {:.2f}".format(NoOfBlkPkt / NoOfAllPkt * 100))
-	print("average number of hops per circuit: {:.2f}".format(NoOfHops / NoOfSuccReq))
-	print("average cumulative propagation delay per circuit: {:.2f}".format(PDelays / NoOfSuccReq))
+#	print("total number of virtual connection requests:", NoOfReq)
+#	print("total number of packets:", NoOfAllPkt)
+#	print("number of successfully routed packets:", NoOfSuccPkt)
+#	print("percentage of successfully routed packets: {:.2f}".format(NoOfSuccPkt / NoOfAllPkt * 100))
+#	print("number of blocked packets:", NoOfBlkPkt)
+#	print("percentage of blocked packets: {:.2f}".format(NoOfBlkPkt / NoOfAllPkt * 100))
+#	print("average number of hops per circuit: {:.2f}".format(NoOfHops / NoOfSuccReq))
+#	print("average cumulative propagation delay per circuit: {:.2f}".format(PDelays / NoOfSuccReq))
 
 if __name__ == "__main__":
 	main()
