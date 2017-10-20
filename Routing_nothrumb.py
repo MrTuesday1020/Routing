@@ -17,7 +17,7 @@ import sys
 NETWORK_SCHEME = "CIRCUIT"
 # routing scheme values: Shortest Hop Path (SHP), Shortest Delay Path (SDP) and Least Loaded Path (LLP)
 # ROUTING_SCHEME = sys.argv[2]
-ROUTING_SCHEME = "LLP"
+ROUTING_SCHEME = "SDP"
 # a file contains the network topology specification
 # TOPOLOGY_FILE = sys.argv[3]
 TOPOLOGY_FILE = "topology.txt"
@@ -27,7 +27,7 @@ TOPOLOGY_FILE = "topology.txt"
 WORKLOAD_FILE = "workload.txt"
 # a positive integer value which show the number of packets per second which will be sent in each virtual connection.
 # PACKET_RATE = int(sys.argv[5])
-PACKET_RATE = 2
+PACKET_RATE = 10
 
 
 ########################## Output  ##########################
@@ -141,7 +141,7 @@ def dijkstra(graph,start,end):
 	visited[start] = True
 	adjed = [start]
 	while len(adjed) != 0:
-		source = adjed.pop()
+		source = adjed.pop(0)
 		edge = graph.edge(source)
 		for i in edge:
 			if visited[i] == False:
@@ -195,7 +195,6 @@ def main():
 	# request[0]: start time, request[1]: source, request[2]:destination, request[3]:duration
 	NoOfReq = len(requests)	
 	
-	count = 0
 	for request in requests:
 		NoOfAllPkt += int(float(request[3]) * PACKET_RATE)
 		
@@ -215,13 +214,10 @@ def main():
 		
 		if isblock: 
 			NoOfBlkPkt += int(float(request[3]) * PACKET_RATE)
-			print("blocked:",count)
 		else:
 			NoOfSuccPkt += int(float(request[3]) * PACKET_RATE)
 			for i in range(len(path)-1):
 				graph.occupy(path[i], path[i+1], float(request[0]) + float(request[3]))
-				
-		count += 1 
 
 	
 	print("total number of virtual connection requests:", NoOfReq)
