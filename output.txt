@@ -1,94 +1,289 @@
 ########################################################
 NETWORK_SCHEME = PACKET
-ROUTING_SCHEME = "SHP"
-PACKET_RATE = 3
-WORKLOAD_FILE = workload_small.txt
-########################################################
-total number of virtual connection requests: 60
-total number of packets: 5460
-number of successfully routed packets: 4687
-percentage of successfully routed packets: 85.84
-number of blocked packets: 833
-percentage of blocked packets: 15.26
-average number of hops per circuit: 4.62
-average cumulative propagation delay per circuit: 67.61
-
-
-########################################################
-NETWORK_SCHEME = PACKET
-ROUTING_SCHEME = "SDP"
-PACKET_RATE = 2
-WORKLOAD_FILE = workload_small.txt
+ROUTING_SCHEME = SHP
+PACKET_RATE = 1
+WORKLOAD_FILE = workload.txt
 ########################################################
 total number of virtual connection requests: 5884
-total number of packets: 355091
-number of successfully routed packets: 204233
-percentage of successfully routed packets: 57.52
-number of blocked packets: 156742
-percentage of blocked packets: 44.14
-average number of hops per circuit: 4.12
-average cumulative propagation delay per circuit: 53.93
+total number of packets: 181951
+number of successfully routed packets: 170977
+percentage of successfully routed packets: 93.97
+number of blocked packets: 10974
+percentage of blocked packets: 6.03
+average number of hops per circuit: 3.63
+average cumulative propagation delay per circuit: 164.33
 
 
 ########################################################
 NETWORK_SCHEME = PACKET
-ROUTING_SCHEME = "LLP"
-PACKET_RATE = 3
-WORKLOAD_FILE = workload_small.txt
+ROUTING_SCHEME = SDP
+PACKET_RATE = 1
+WORKLOAD_FILE = workload.txt
 ########################################################
-total number of virtual connection requests: 60
-total number of packets: 5460
-number of successfully routed packets: 4796
-percentage of successfully routed packets: 87.84
-number of blocked packets: 724
-percentage of blocked packets: 13.26
-average number of hops per circuit: 4.64
-average cumulative propagation delay per circuit: 68.32
+total number of virtual connection requests: 5884
+total number of packets: 181951
+number of successfully routed packets: 175782
+percentage of successfully routed packets: 96.61
+number of blocked packets: 6169
+percentage of blocked packets: 3.39
+average number of hops per circuit: 3.88
+average cumulative propagation delay per circuit: 153.97
 
 
 ########################################################
-NETWORK_SCHEME = CIRCUIT
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = LLP
+PACKET_RATE = 1
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 181951
+number of successfully routed packets: 181796
+percentage of successfully routed packets: 99.91
+number of blocked packets: 155
+percentage of blocked packets: 0.09
+average number of hops per circuit: 4.00
+average cumulative propagation delay per circuit: 184.98
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SHP
+PACKET_RATE = 2
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 360975
+number of successfully routed packets: 340133
+percentage of successfully routed packets: 94.23
+number of blocked packets: 20842
+percentage of blocked packets: 5.77
+average number of hops per circuit: 3.63
+average cumulative propagation delay per circuit: 164.35
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SDP
+PACKET_RATE = 2
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 360975
+number of successfully routed packets: 349378
+percentage of successfully routed packets: 96.79
+number of blocked packets: 11597
+percentage of blocked packets: 3.21
+average number of hops per circuit: 3.88
+average cumulative propagation delay per circuit: 153.99
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = LLP
+PACKET_RATE = 2
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 360975
+number of successfully routed packets: 360704
+percentage of successfully routed packets: 99.92
+number of blocked packets: 271
+percentage of blocked packets: 0.08
+average number of hops per circuit: 4.00
+average cumulative propagation delay per circuit: 184.96
+
+
+########################################################
+NETWORK_SCHEME = PACKET
 ROUTING_SCHEME = SHP
 PACKET_RATE = 3
 WORKLOAD_FILE = workload.txt
 ########################################################
 total number of virtual connection requests: 5884
-total number of packets: 534117
-number of successfully routed packets: 351479
-percentage of successfully routed packets: 65.81
-number of blocked packets: 182638
-percentage of blocked packets: 34.19
-average number of hops per circuit: 3.89
-average cumulative propagation delay per circuit: 60.57
+total number of packets: 540001
+number of successfully routed packets: 506431
+percentage of successfully routed packets: 93.78
+number of blocked packets: 33570
+percentage of blocked packets: 6.22
+average number of hops per circuit: 3.63
+average cumulative propagation delay per circuit: 165.07
 
 
 ########################################################
-NETWORK_SCHEME = CIRCUIT
+NETWORK_SCHEME = PACKET
 ROUTING_SCHEME = SDP
 PACKET_RATE = 3
 WORKLOAD_FILE = workload.txt
 ########################################################
 total number of virtual connection requests: 5884
-total number of packets: 534117
-number of successfully routed packets: 344216
-percentage of successfully routed packets: 64.45
-number of blocked packets: 189901
-percentage of blocked packets: 35.55
-average number of hops per circuit: 4.32
-average cumulative propagation delay per circuit: 53.72
+total number of packets: 540001
+number of successfully routed packets: 521342
+percentage of successfully routed packets: 96.54
+number of blocked packets: 18659
+percentage of blocked packets: 3.46
+average number of hops per circuit: 3.88
+average cumulative propagation delay per circuit: 154.07
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = LLP
+PACKET_RATE = 3
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 540001
+number of successfully routed packets: 539466
+percentage of successfully routed packets: 99.90
+number of blocked packets: 535
+percentage of blocked packets: 0.10
+average number of hops per circuit: 4.00
+average cumulative propagation delay per circuit: 185.59
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SHP
+PACKET_RATE = 4
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 719053
+number of successfully routed packets: 678470
+percentage of successfully routed packets: 94.36
+number of blocked packets: 40583
+percentage of blocked packets: 5.64
+average number of hops per circuit: 3.62
+average cumulative propagation delay per circuit: 164.27
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SDP
+PACKET_RATE = 4
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 719053
+number of successfully routed packets: 696478
+percentage of successfully routed packets: 96.86
+number of blocked packets: 22575
+percentage of blocked packets: 3.14
+average number of hops per circuit: 3.88
+average cumulative propagation delay per circuit: 154.11
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = LLP
+PACKET_RATE = 4
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 719053
+number of successfully routed packets: 718563
+percentage of successfully routed packets: 99.93
+number of blocked packets: 490
+percentage of blocked packets: 0.07
+average number of hops per circuit: 3.99
+average cumulative propagation delay per circuit: 184.75
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SHP
+PACKET_RATE = 5
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 898101
+number of successfully routed packets: 838976
+percentage of successfully routed packets: 93.42
+number of blocked packets: 59125
+percentage of blocked packets: 6.58
+average number of hops per circuit: 3.64
+average cumulative propagation delay per circuit: 165.54
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = SDP
+PACKET_RATE = 5
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 898101
+number of successfully routed packets: 864718
+percentage of successfully routed packets: 96.28
+number of blocked packets: 33383
+percentage of blocked packets: 3.72
+average number of hops per circuit: 3.88
+average cumulative propagation delay per circuit: 153.98
+
+
+########################################################
+NETWORK_SCHEME = PACKET
+ROUTING_SCHEME = LLP
+PACKET_RATE = 5
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 898101
+number of successfully routed packets: 896988
+percentage of successfully routed packets: 99.88
+number of blocked packets: 1113
+percentage of blocked packets: 0.12
+average number of hops per circuit: 4.00
+average cumulative propagation delay per circuit: 185.97
+
+
+
+################################################################################################################
 
 
 ########################################################
 NETWORK_SCHEME = CIRCUIT
-ROUTING_SCHEME = "LLP"
-PACKET_RATE = 3
+ROUTING_SCHEME = SHP
+PACKET_RATE = 2
 WORKLOAD_FILE = workload.txt
 ########################################################
-total number of virtual connection requests: 60
-total number of packets: 5460
-number of successfully routed packets: 4465
-percentage of successfully routed packets: 81.78
-number of blocked packets: 995
-percentage of blocked packets: 18.22
-average number of hops per circuit: 4.14
-average cumulative propagation delay per circuit: 68.73
+total number of virtual connection requests: 5884
+total number of packets: 355091
+number of successfully routed packets: 323558
+percentage of successfully routed packets: 91.12
+number of blocked packets: 31533
+percentage of blocked packets: 8.88
+average number of hops per circuit: 3.65
+average cumulative propagation delay per circuit: 166.82
+
+
+########################################################
+NETWORK_SCHEME = CIRCUIT
+ROUTING_SCHEME = SDP
+PACKET_RATE = 2
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 355091
+number of successfully routed packets: 334409
+percentage of successfully routed packets: 94.18
+number of blocked packets: 20682
+percentage of blocked packets: 5.82
+average number of hops per circuit: 3.89
+average cumulative propagation delay per circuit: 154.18
+
+
+########################################################
+NETWORK_SCHEME = CIRCUIT
+ROUTING_SCHEME = LLP
+PACKET_RATE = 2
+WORKLOAD_FILE = workload.txt
+########################################################
+total number of virtual connection requests: 5884
+total number of packets: 355091
+number of successfully routed packets: 350527
+percentage of successfully routed packets: 98.71
+number of blocked packets: 4564
+percentage of blocked packets: 1.29
+average number of hops per circuit: 4.02
+average cumulative propagation delay per circuit: 187.03
